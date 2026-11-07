@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐄 Ферма ПРО — учёт хозяйства</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16a34a">
+<style>
+:root{
+  --bg:#0b0f1a;--panel:rgba(255,255,255,.045);--panel2:rgba(255,255,255,.08);
+  --fg:#eef2f7;--muted:#8b93a7;--line:rgba(255,255,255,.09);
+  --acc:#22c55e;--acc2:#0ea5e9;--red:#ef4444;--amber:#f59e0b;--violet:#8b5cf6;
+  --grad:linear-gradient(135deg,#16a34a,#0ea5e9);
+  --r:16px;--sh:0 8px 28px rgba(0,0,0,.35);
+}
+body.light{
+  --bg:#f1f5f9;--panel:rgba(255,255,255,.85);--panel2:rgba(255,255,255,.95);
+  --fg:#0f172a;--muted:#5b6478;--line:rgba(15,23,42,.09);--sh:0 8px 24px rgba(15,23,42,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Segoe UI',system-ui,sans-serif;font-size:15px;min-height:100vh;display:flex}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(600px 400px at 15% 0%,rgba(34,197,94,.12),transparent),
+             radial-gradient(700px 500px at 90% 100%,rgba(14,165,233,.10),transparent)}
+button{font:inherit;cursor:pointer;border:none;border-radius:12px}
+input,select,textarea{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--fg);width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(34,197,94,.4);border-color:var(--acc)}
+label{font-size:12px;color:var(--muted);font-weight:600;display:block;margin:0 0 4px 2px}
+.field{margin-bottom:12px}
+h2{margin:0 0 18px;font-size:24px}
+h3{margin:0 0 12px;font-size:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}
+
+/* ===== SIDEBAR ===== */
+aside{width:230px;flex-shrink:0;background:var(--panel);backdrop-filter:blur(16px);border-right:1px solid var(--line);
+  padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:5}
+.logo{font-weight:800;font-size:19px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;padding:4px 10px 14px}
+.nv{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:transparent;color:var(--muted);font-weight:600;font-size:14px;width:100%;text-align:left;transition:.15s}
+.nv:hover{background:var(--panel2);color:var(--fg)}
+.nv.on{background:var(--grad);color:#fff;box-shadow:0 4px 14px rgba(34,197,94,.35)}
+.aside-foot{margin-top:auto;display:flex;gap:6px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--line)}
+.mini{background:var(--panel2);color:var(--muted);padding:7px 10px;font-size:12px;border:1px solid var(--line)}
+.mini:hover{color:var(--fg)}
+main{flex:1;padding:22px 26px 40px;min-width:0;position:relative;z-index:1}
+.wrap{max-width:1150px;margin:0 auto}
+.tab{display:none}.tab.active{display:block;animation:fade .25s}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ===== CARDS ===== */
+.card{background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:15px 16px}
+.kpi .lbl{font-size:12px;color:var(--muted);font-weight:600}
+.kpi .val{font-size:23px;font-weight:800;margin-top:5px;letter-spacing:-.02em}
+.kpi .sub{font-size:12px;color:var(--muted);margin-top:3px}
+.kpi .val.plus{color:var(--acc)}.kpi .val.minus{color:var(--red)}.kpi .val.amber{color:var(--amber)}
+.muted{color:var(--muted);font-size:13px}
+
+.btn{background:var(--grad);color:#fff;padding:10px 16px;font-weight:600;transition:.15s}
+.btn:hover{filter:brightness(1.12)}
+.btn.red{background:linear-gradient(135deg,#ef4444,#b91c1c)}
+.btn.blue{background:linear-gradient(135deg,#0ea5e9,#0369a1)}
+.btn.amber{background:linear-gradient(135deg,#f59e0b,#b45309)}
+.btn.violet{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+.btn.gray{background:var(--panel2);color:var(--fg);border:1px solid var(--line)}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:9px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;padding:9px 10px;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid var(--line)}
+tr:hover td{background:var(--panel2)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700}
+.tag.g{background:rgba(34,197,94,.18);color:#4ade80}
+.tag.r{background:rgba(239,68,68,.18);color:#f87171}
+.tag.b{background:rgba(14,165,233,.18);color:#38bdf8}
+.tag.y{background:rgba(245,158,11,.18);color:#fbbf24}
+.tag.gr{background:var(--panel2);color:var(--muted)}
+body.light .tag.g{color:#15803d}body.light .tag.r{color:#b91c1c}body.light .tag.b{color:#0369a1}body.light .tag.y{color:#92400e}
+
+.cow-card{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;background:var(--panel2);flex-wrap:wrap;transition:.15s}
+.cow-card:hover{border-color:var(--acc);transform:translateY(-1px)}
+.cow-name{font-weight:700;font-size:16px}
+.cow-meta{font-size:13px;color:var(--muted);margin-top:3px}
+.cow-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:24px;overflow-y:auto;backdrop-filter:blur(4px)}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:22px;width:100%;max-width:600px;box-shadow:0 24px 70px rgba(0,0,0,.5);margin:auto 0}
+.modal h3{margin-bottom:16px;font-size:18px}
+.modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.empty{padding:36px;text-align:center;color:var(--muted);font-size:14px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.toolbar input,.toolbar select{width:auto;min-width:150px}
+.bar{height:9px;border-radius:6px;background:var(--panel2);overflow:hidden;margin-top:8px}
+.bar>div{height:100%;background:var(--grad);border-radius:6px;transition:width .4s}
+.bar.over>div{background:linear-gradient(90deg,#ef4444,#f59e0b)}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e293b;color:#fff;padding:11px 22px;border-radius:99px;font-size:14px;opacity:0;transition:.3s;z-index:99;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+canvas.cv{width:100%;height:260px;display:block}
+.warn{color:var(--amber);font-weight:700}
+.rem-item{padding:8px 12px;border-radius:10px;background:var(--panel2);margin-bottom:7px;font-size:13.5px;display:flex;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.tip{border-left:3px solid var(--acc);padding:10px 14px;background:var(--panel2);border-radius:0 12px 12px 0;margin-bottom:12px}
+.tip b{display:block;margin-bottom:4px}
+.ibtn{display:inline-block;width:26px;height:26px;border-radius:50%;padding:0;font-size:12px;font-weight:700;line-height:24px;text-align:center;background:var(--panel2);color:var(--muted);border:1px solid var(--line);vertical-align:middle;flex-shrink:0}
+.ibtn:hover{color:var(--acc);border-color:var(--acc)}
+@media(max-width:960px){
+  body{flex-direction:column}
+  aside{width:100%;height:auto;flex-direction:row;align-items:center;overflow-x:auto;padding:10px;gap:4px;position:sticky;top:0}
+  .logo{padding:0 10px 0 4px;font-size:16px;white-space:nowrap}
+  .nv{width:auto;white-space:nowrap;padding:8px 12px}
+  .aside-foot{margin:0 0 0 auto;padding:0;border:none}
+  main{padding:14px}
+  .grid2{grid-template-columns:1fr}
+  .kpi .val{font-size:20px}
+}
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="logo">🐄 Ферма ПРО</div>
+  <button class="nv on" data-tab="dash">📊 Дашборд</button>
+  <button class="nv" data-tab="cows">🐮 Коровы</button>
+  <button class="nv" data-tab="milk">🥛 Надои</button>
+  <button class="nv" data-tab="sales">💰 Продажи молока</button>
+  <button class="nv" data-tab="fin">🧾 Доходы и расходы</button>
+  <button class="nv" data-tab="feed">🌾 Корма</button>
+  <button class="nv" data-tab="ration">🥣 Кормление</button>
+  <button class="nv" data-tab="vet">💉 Ветеринария</button>
+  <button class="nv" data-tab="calf">🍼 Отёлы</button>
+  <button class="nv" data-tab="breed">❤️ Осеменения</button>
+  <button class="nv" data-tab="weights">⚖️ Привесы</button>
+  <button class="nv" data-tab="berry">🍓 Земляника</button>
+  <button class="nv" data-tab="vent">📦 Направления</button>
+  <span id="navVent"></span>
+  <button class="nv" data-tab="reports">📑 Отчёты</button>
+  <button class="nv" data-tab="calc">🧮 Калькулятор</button>
+  <button class="nv" data-tab="tips">💡 Советы</button>
+  <button class="nv" data-tab="anl">📈 Аналитика</button>
+  <button class="nv" data-tab="set">⚙️ Настройки</button>
+  <div class="aside-foot">
+    <button class="mini" onclick="exportData()">⬇ Экспорт</button>
+    <label class="mini" style="cursor:pointer">⬆ Импорт<input type="file" accept=".json" style="display:none" onchange="importFile(this)"></label>
+    <button class="mini" onclick="toggleTheme()">🌓</button>
+  </div>
+</aside>
+
+<main><div class="wrap">
+
+<!-- ДАШБОРД -->
+<section class="tab active" id="tab-dash">
+  <div class="kpis" id="dashKpis"></div>
+  <div class="card"><h3>🔮 Прогноз <button class="ibtn" onclick="showInfo('dashForecast')">i</button></h3><div id="dashForecast"></div></div>
+  <div class="card"><h3>🔔 Напоминания</h3><div id="dashRem"></div></div>
+  <div class="grid2">
+    <div class="card"><h3>Надои за 14 дней</h3><canvas class="cv" id="cvWeek"></canvas></div>
+    <div class="card"><h3>Касса за 6 месяцев</h3><canvas class="cv" id="cvCash"></canvas></div>
+  </div>
+  <div class="card"><h3>Последние операции</h3><div class="tbl-wrap" id="dashLast"></div></div>
+</section>
+
+<!-- КОРОВЫ -->
+<section class="tab" id="tab-cows">
+  <div class="card">
+    <div class="toolbar">
+      <button class="btn" onclick="openCow()">＋ Корова</button>
+      <input id="cowSearch" placeholder="🔍 Поиск..." oninput="renderCows()">
+      <select id="cowStatus" onchange="renderCows()">
+        <option value="">Все статусы</option><option>Дойная</option><option>Сухостойная</option><option>На откорме</option><option>Телёнок</option>
+      </select>
+      <select id="cowSort" onchange="renderCows()">
+        <option value="name">По кличке</option><option value="milk">По надою</option><option value="earn">По выручке</option>
+      </select>
+    </div>
+    <div id="cowList"></div>
+  </div>
+</section>
+
+<!-- НАДОИ -->
+<section class="tab" id="tab-milk">
+  <div class="card">
+    <div class="kpis" id="milkKpis"></div>
+    <div class="toolbar">
+      <button class="btn" onclick="openMilk()">＋ Надой</button>
+      <button class="btn blue" onclick="openMilkHerd()">🧺 Всё стадо</button>
+      <input type="month" id="milkMonth" onchange="renderMilk()">
+      <select id="milkSess" onchange="renderMilk()"><option value="">Все дойки</option><option value="am">Утро</option><option value="pm">Вечер</option><option value="day">За день</option></select>
+    </div>
+    <div class="tbl-wrap" id="milkList"></div>
+  </div>
+</section>
+
+<!-- ПРОДАЖИ МОЛОКА -->
+<section class="tab" id="tab-sales">
+  <div class="card">
+    <div class="kpis" id="salesKpis"></div>
+    <div class="toolbar">
+      <button class="btn" onclick="openSale()">＋ Продажа</button>
+      <input type="month" id="salesMonth" onchange="renderSales()">
+    </div>
+    <div class="tbl-wrap" id="salesList"></div>
+  </div>
+</section>
+
+<!-- ФИНАНСЫ -->
+<section class="tab" id="tab-fin">
+  <div class="kpis" id="finKpis"></div>
+  <div class="card" id="budgetCard"></div>
+  <div class="card">
+    <div class="toolbar">
+      <button class="btn red" onclick="openTx('out')">＋ Расход</button>
+      <button class="btn" onclick="openTx('in')">＋ Доход</button>
+      <input type="month" id="finMonth" onchange="renderFin()">
+      <select id="finType" onchange="renderFin()"><option value="">Все</option><option value="out">Расходы</option><option value="in">Доходы</option></select>
+      <select id="finCat" onchange="renderFin()"><option value="">Все категории</option></select>
+    </div>
+    <div class="tbl-wrap" id="finList"></div>
+  </div>
+</section>
+
+<!-- КОРМА -->
+<section class="tab" id="tab-feed">
+  <div class="card">
+    <div class="toolbar">
+      <button class="btn" onclick="openFeed()">＋ Корм</button>
+      <button class="btn blue" onclick="buyFeed()">🚚 Закупка</button>
+      <button class="btn amber" onclick="useFeed()">🥣 Раздача</button>
+    </div>
+    <div id="feedCards"></div>
+    <h3 style="margin-top:16px">Журнал закупок</h3><div class="tbl-wrap" id="feedBuyLog"></div>
+    <h3 style="margin-top:16px">Журнал раздачи</h3><div class="tbl-wrap" id="feedUseLog"></div>
+  </div>
+</section>
+
+<!-- ВЕТЕРИНАРИЯ -->
+<section class="tab" id="tab-vet">
+  <div class="card">
+    <div class="toolbar"><button class="btn" onclick="openVet()">＋ Запись</button></div>
+    <div class="tbl-wrap" id="vetList"></div>
+  </div>
+</section>
+
+<!-- ОТЁЛЫ -->
+<section class="tab" id="tab-calf">
+  <div class="card">
+    <div class="toolbar"><button class="btn" onclick="openCalf()">＋ Отёл</button></div>
+    <div class="tbl-wrap" id="calfList"></div>
+  </div>
+</section>
+
+<!-- ОСЕМЕНЕНИЯ -->
+<section class="tab" id="tab-breed">
+  <div class="card">
+    <div class="toolbar"><button class="btn" onclick="openBreed()">＋ Осеменение</button></div>
+    <div class="tbl-wrap" id="breedList"></div>
+  </div>
+</section>
+
+<!-- ПРИВЕСЫ -->
+<section class="tab" id="tab-weights">
+  <div class="card">
+    <div class="toolbar"><button class="btn" onclick="openWeight()">＋ Взвешивание</button></div>
+    <div class="tbl-wrap" id="weightList"></div>
+  </div>
+</section>
+
+<!-- ЗЕМЛЯНИКА -->
+<section class="tab" id="tab-berry">
+  <div class="card">
+    <div class="toolbar">
+      <button class="btn" onclick="openBerryCollect()">＋ Сбор ягод</button>
+      <button class="btn blue" onclick="openBerrySale()">＋ Продажа</button>
+      <button class="btn amber" onclick="openBerrySet()">⚙️ План сезона</button>
+    </div>
+    <div class="kpis" id="berryKpis"></div>
+    <div id="berryForecast"></div>
+    <h3 style="margin-top:8px">Сбор и продажи по дням</h3><canvas class="cv" id="cvBerry"></canvas>
+    <h3 style="margin-top:16px">Журнал сбора</h3><div class="tbl-wrap" id="berryCollectLog"></div>
+    <h3 style="margin-top:16px">Журнал продаж</h3><div class="tbl-wrap" id="berrySalesLog"></div>
+  </div>
+</section>
+
+<!-- АНАЛИТИКА -->
+<section class="tab" id="tab-anl">
+  <div class="card"><h3>🔮 Прогноз на год <button class="ibtn" onclick="showInfo('forecast')">i</button></h3><div id="yearForecast"></div></div>
+  <div class="card"><h3>Доходы и расходы по месяцам</h3><canvas class="cv" id="cvMonths"></canvas></div>
+  <div class="grid2">
+    <div class="card"><h3>Утро vs вечер (30 дней)</h3><canvas class="cv" id="cvAmPm"></canvas></div>
+    <div class="card"><h3>Средняя цена молока по месяцам</h3><canvas class="cv" id="cvPrice"></canvas></div>
+  </div>
+  <div class="card"><h3>Структура расходов за год</h3><div class="toolbar"><select id="anlYear" onchange="renderAnl()"></select></div><canvas class="cv" id="cvCats"></canvas></div>
+  <div class="grid2">
+    <div class="card"><h3>Надой по коровам за 30 дней</h3><canvas class="cv" id="cvCows"></canvas></div>
+    <div class="card"><h3>Кормозатраты по животным за год</h3><canvas class="cv" id="cvFeedCows"></canvas></div>
+  </div>
+  <div class="card"><h3>Финансовый итог по годам</h3><canvas class="cv" id="cvYears"></canvas></div>
+</section>
+
+<!-- НАСТРОЙКИ -->
+<section class="tab" id="tab-set">
+  <div class="card">
+    <h3>Основное</h3>
+    <div class="row">
+      <div class="field"><label>Цена молока по умолчанию, ₽/л</label><input id="setPrice" type="number" step="0.01"></div>
+      <div class="field"><label>Бюджет расходов на месяц, ₽</label><input id="setBudget" type="number" step="1"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Цена земляники при продаже, ₽/л</label><input id="setBerryPrice" type="number" step="0.01"></div>
+      <div class="field"><label>Стоимость сбора, ₽/л</label><input id="setBerryCost" type="number" step="0.01"></div>
+    </div>
+    <div class="field"><label>Категории расходов (по одной в строке)</label><textarea id="setCatsOut" rows="5"></textarea></div>
+    <div class="field"><label>Категории доходов (по одной в строке)</label><textarea id="setCatsIn" rows="4"></textarea></div>
+    <button class="btn" onclick="saveSettings()">Сохранить</button>
+  </div>
+  <div class="card">
+    <h3>Данные</h3>
+    <p class="muted" style="margin-bottom:12px">Данные хранятся в этом браузере. Регулярно делайте экспорт — это единственная страховка от потери учёта.</p>
+    <button class="btn" onclick="exportData()">⬇ Экспорт в JSON</button>
+    <button class="btn red" style="margin-left:8px" onclick="wipe()">🗑 Стереть всё</button>
+  </div>
+</section>
+
+
+<!-- КОРМЛЕНИЕ -->
+<section class="tab" id="tab-ration">
+  <div class="card">
+    <h3>Конструктор рациона <button class="ibtn" onclick="showInfo('ration')">i</button></h3>
+    <div class="row">
+      <div class="field"><label>Животное</label><select id="ratCow" onchange="ratCowChanged()"></select></div>
+      <div class="field"><label>Надой, л/день (для дойной)</label><input id="ratLiters" type="number" step="0.1" value="15" oninput="calcRat()"></div>
+    </div>
+    <div id="ratNorm"></div>
+    <h3 style="margin-top:14px">Корма в рационе</h3>
+    <div class="toolbar"><select id="ratFeedAdd" onchange="ratAdd()"><option value="">— добавить корм из справочника —</option></select></div>
+    <div class="tbl-wrap" id="ratRows"></div>
+    <div id="ratTot"></div>
+    <div id="ratAdvice" style="margin-top:12px"></div>
+  </div>
+  <div class="card"><h3>Справочник кормов <button class="ibtn" onclick="showInfo('ref')">i</button> <button class="btn sm" onclick="openFeedCustom()">＋ Свой корм</button></h3><div class="tbl-wrap" id="ratRef"></div></div>
+</section>
+
+<!-- НАПРАВЛЕНИЯ -->
+<section class="tab" id="tab-vent">
+  <div class="card">
+    <div class="toolbar"><button class="btn" onclick="openVent()">＋ Направление</button><button class="ibtn" onclick="showInfo('vent')">i</button></div>
+    <div id="ventBody"></div>
+  </div>
+</section>
+
+<!-- ОТЧЁТЫ -->
+<section class="tab" id="tab-reports">
+  <div class="card">
+    <div class="toolbar">
+      <select id="repPeriod" onchange="repPeriodChanged()">
+        <option value="year">Этот год</option><option value="month">Этот месяц</option>
+        <option value="prev">Прошлый месяц</option><option value="all">Всё время</option><option value="custom">Произвольный период</option>
+      </select>
+      <input type="date" id="repFrom" style="display:none" onchange="renderReports()">
+      <input type="date" id="repTo" style="display:none" onchange="renderReports()">
+    </div>
+    <div id="repBody"></div>
+  </div>
+</section>
+
+<!-- КАЛЬКУЛЯТОР -->
+<section class="tab" id="tab-calc">
+  <div class="card">
+    <h3>🥛 Молоко <button class="ibtn" onclick="showInfo('milkCalc')">i</button></h3>
+    <div class="row">
+      <div class="field"><label>Коров, гол.</label><input id="cCows" type="number" value="3" oninput="calcMilk()"></div>
+      <div class="field"><label>Литров с коровы в день</label><input id="cLiters" type="number" step="0.1" value="15" oninput="calcMilk()"></div>
+      <div class="field"><label>Цена, ₽/л</label><input id="cPrice" type="number" step="0.1" value="60" oninput="calcMilk()"></div>
+      <div class="field"><label>Себестоимость, ₽/л</label><input id="cCost" type="number" step="0.1" value="35" oninput="calcMilk()"></div>
+      <div class="field"><label>Постоянные расходы, ₽/мес</label><input id="cFixed" type="number" value="0" oninput="calcMilk()"></div>
+    </div>
+    <div id="calcMilkOut"></div>
+  </div>
+  <div class="card">
+    <h3>🍓 Сезон ягод <button class="ibtn" onclick="showInfo('berryCalc')">i</button></h3>
+    <div class="row">
+      <div class="field"><label>Сбор, л/день</label><input id="bLD" type="number" value="10" oninput="calcBerry()"></div>
+      <div class="field"><label>Дней сезона</label><input id="bDays" type="number" value="30" oninput="calcBerry()"></div>
+      <div class="field"><label>Цена, ₽/л</label><input id="bPrice" type="number" step="0.1" value="150" oninput="calcBerry()"></div>
+      <div class="field"><label>Сбор, ₽/л</label><input id="bPick" type="number" step="0.1" value="40" oninput="calcBerry()"></div>
+      <div class="field"><label>Прочие расходы, ₽</label><input id="bOther" type="number" value="0" oninput="calcBerry()"></div>
+    </div>
+    <div id="calcBerryOut"></div>
+  </div>
+  
+<div class="card">
+  <h3>🧮 Любой продукт <button class="ibtn" onclick="showInfo('uc')">i</button></h3>
+  <div class="row">
+    <div class="field"><label>Пресет</label><select id="uPreset" onchange="ucSet(this.value)"></select></div>
+    <div class="field"><label>Название</label><input id="uName" value="Молоко" oninput="ucCalc()"></div>
+    <div class="field"><label>Единица</label><input id="uUnit" value="л" oninput="ucCalc()"></div>
+  </div>
+  <div class="row">
+    <div class="field"><label>Производство в день</label><input id="uPerDay" type="number" step="0.1" value="10" oninput="ucCalc()"></div>
+    <div class="field"><label>Цена продажи</label><input id="uPrice" type="number" step="0.01" value="60" oninput="ucCalc()"></div>
+    <div class="field"><label>Себестоимость единицы</label><input id="uCost" type="number" step="0.01" value="35" oninput="ucCalc()"></div>
+  </div>
+  <div class="row">
+    <div class="field"><label>Постоянные расходы, ₽/мес</label><input id="uFixed" type="number" value="0" oninput="ucCalc()"></div>
+    <div class="field"><label>Рабочих дней в году</label><input id="uDays" type="number" value="365" oninput="ucCalc()"></div>
+  </div>
+  <div id="ucOut"></div>
+</div>
+<div class="card"><h3>🔮 Прогноз по фактическим данным года <button class="ibtn" onclick="showInfo('forecast')">i</button></h3><div id="calcForecast"></div></div>
+</section>
+
+<!-- СОВЕТЫ -->
+<section class="tab" id="tab-tips">
+  <div class="card">
+    <h3>🥛 Молоко: как выгоднее продавать</h3>
+    <div class="tip"><b>Прямые продажи</b>Самая высокая цена (+30–80% к приёмке): соседям, на рынке, через знакомых. Держите список постоянных покупателей — стабильный объём важнее разовых высоких цен.</div>
+    <div class="tip"><b>Молокозавод / приёмка</b>Стабильно и без хлопот, но цена ниже. Имеет смысл при больших объёмах, когда некогда торговать самому.</div>
+    <div class="tip"><b>Переработка</b>Сметана, масло, творог повышают цену литра в 1,5–3 раза. Нужны санитарные условия и канал сбыта; начинать проще со сметаны и творога.</div>
+  </div>
+  <div class="card">
+    <h3>🥩 Мясо: четвертинами или живым весом</h3>
+    <div class="tip"><b>Чвертинами</b>Дороже на 20–40%, но нужны покупатели на всю тушу, разделка и упаковка. Хорошо работает по предзаказам.</div>
+    <div class="tip"><b>Живым весом</b>Быстро и просто: перекупщик забирает сам. Цена ниже, зато нет риска, что часть туши останется непроданной.</div>
+  </div>
+  <div class="card">
+    <h3>🍓 Ягода: свежая или заготовки</h3>
+    <div class="tip"><b>Свежая</b>Максимальная цена в пик сезона. Продавайте малыми партиями часто — переспавшая ягода съедает всю маржу.</div>
+    <div class="tip"><b>Заморозка и заготовки</b>Цена ниже в 1,5–2 раза, но продаётся круглый год. Заморозка спасает излишки в пик; планируйте ёмкости заранее.</div>
+  </div>
+  <div class="card">
+    <h3>🌾 Корма и запас сена</h3>
+    <div class="tip"><b>Запас сена</b>Дойной корове ориентируйтесь на 3–4 тонны сена на стойловый период (около 8 месяцев) плюс силос и концентраты. Закладывайте +10–15% на потери.</div>
+    <div class="tip"><b>Концентраты</b>Дойной корове обычно дают 100–300 г комбикорма на литр молока сверх базового рациона. Проверяйте покрытие нормы в разделе «Кормление».</div>
+  </div>
+  <div class="card">
+    <h3>📋 Советы по учёту</h3>
+    <div class="tip"><b>Каждый день</b>Один пропущенный день ломаёт средние и прогнозы. Записывайте надой сразу после дойки.</div>
+    <div class="tip"><b>Себестоимость важнее выручки</b>Высокая выручка при дорогом корме — иллюзия. Следите за прибылью и себестоимостью литра в «Отчётах».</div>
+    <div class="tip"><b>Делайте экспорт</b>Данные живут в этом браузере. Экспортируйте JSON хотя бы раз в месяц.</div>
+  </div>
+</section>
+
+</div></main>
+
+<div class="overlay" id="ov" onclick="if(event.target===this)closeForm()">
+  <div class="modal"><h3 id="mTitle"></h3><div id="mBody"></div>
+  <div class="actions"><button class="btn gray" onclick="closeForm()">Отмена</button><button class="btn" id="mOk">Сохранить</button></div></div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ============ ДАННЫЕ ============ */
+const LS='farmPro.v3', OLD='farmApp.v1';
+const defDb=()=>({
+  cows:[],milk:[],sales:[],tx:[],feed:[],feedBuy:[],feedUse:[],vet:[],calf:[],breed:[],weights:[],ventures:[],ventLogs:[],
+  berry:{collect:[],sales:[],exp:{name:'Земляника',litersDay:10,days:10,price:150,pickCost:40,other:0}},
+  settings:{price:60,budget:0,berryPrice:150,berryCost:40,
+    catsOut:['Корма','Ветеринария','Электричество','Топливо','Ремонт','Зарплата/наём','Ягоды (сбор)','Прочее'],
+    catsIn:['Продажа молока','Продажа ягод','Продажа животных','Мясо','Прочее']}
+});
+let db;
+try{db=JSON.parse(localStorage.getItem(LS))||null}catch(e){db=null}
+if(!db){
+  try{const old=JSON.parse(localStorage.getItem(OLD));
+    if(old){db=defDb();
+      db.cows=old.cows||[];db.tx=old.tx||[];db.feed=old.feed||[];db.feedBuy=old.feedBuy||[];db.feedUse=old.feedUse||[];
+      db.vet=old.vet||[];db.calf=old.calf||[];
+      db.milk=(old.milk||[]).map(m=>({id:m.id,cowId:m.cowId,date:m.date,session:'day',liters:m.liters,price:m.price}));
+      if(old.settings){db.settings.price=old.settings.price||60;
+        if(old.settings.catsOut)db.settings.catsOut=old.settings.catsOut;
+        if(old.settings.catsIn)db.settings.catsIn=old.settings.catsIn;}
+      (old.milk||[]).forEach(m=>{if(m.liters*m.price>0)db.tx.push({id:uid()+'m',type:'in',date:m.date,cat:'Продажа молока',amount:+(m.liters*m.price).toFixed(2),cowId:'',note:'Перенос из старой версии: надой '+cowNmFromOld(m.cowId,old)});});
+    }
+  }catch(e){}
+}
+if(!db)db=defDb();
+for(const k of Object.keys(defDb()))if(db[k]===undefined)db[k]=defDb()[k];
+db.ventures=db.ventures||[];db.ventLogs=db.ventLogs||[];
+if(!db.berry||!db.berry.exp)db.berry={collect:[],sales:[],exp:{name:'Земляника',litersDay:10,days:10,price:150,pickCost:40,other:0}};
+if(db.berry.exp.other===undefined)db.berry.exp.other=0;
+function cowNmFromOld(id,old){return ((old.cows||[]).find(c=>c.id===id)||{}).name||'стадо'}
+const save=()=>localStorage.setItem(LS,JSON.stringify(db));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>new Intl.NumberFormat('ru-RU',{maximumFractionDigits:0}).format(n)+' ₽';
+const money2=n=>new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2}).format(n)+' ₽';
+const num=n=>new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(n);
+const fmtD=d=>d?new Date(d+'T00:00').toLocaleDateString('ru-RU'):'—';
+const today=()=>new Date().toISOString().slice(0,10);
+const mk=d=>(d||'').slice(0,7);
+const thisMk=()=>today().slice(0,7);
+const cow=id=>db.cows.find(c=>c.id===id);
+const cowName=id=>id==='herd'?'🧺 Всё стадо':(cow(id)||{}).name||'—';
+const addDays=(d,n)=>{const x=new Date(d+'T00:00');x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)};
+const daysBetween=(a,b)=>Math.round((new Date(b)-new Date(a))/864e5);
+
+/* ============ UI ============ */
+function bindNav(){document.querySelectorAll('.nv').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.nv').forEach(x=>x.classList.toggle('on',x===b));
+  const t=b.dataset.tab;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.id==='tab-'+(t.indexOf('vent:')===0?'vent':t)));
+  render();window.scrollTo(0,0);
+})}
+function switchTo(t){const b=document.querySelector(`.nv[data-tab="${t}"]`);if(b)b.click()}
+let saveCb=null;
+function form(title,body,onSave,btn='Сохранить'){
+  document.getElementById('mTitle').textContent=title;
+  document.getElementById('mBody').innerHTML=body;
+  document.getElementById('mOk').textContent=btn;saveCb=onSave;
+  document.getElementById('ov').classList.add('open');
+}
+function closeForm(){document.getElementById('ov').classList.remove('open');saveCb=null}
+function submitForm(){if(saveCb&&saveCb()!==false){closeForm();save();render()}}
+document.getElementById('mOk').onclick=submitForm;
+const V=id=>document.getElementById(id).value.trim();
+const N=id=>parseFloat(String(document.getElementById(id).value).replace(',','.'))||0;
+const Ch=id=>document.getElementById(id).checked;
+const sel=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v};
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+const f=(l,h)=>`<div class="field"><label>${l}</label>${h}</div>`;
+function cowOpts(selId,any=true){return `<option value="">${any?'— не указано —':''}</option>`+
+  db.cows.map(c=>`<option value="${c.id}" ${c.id===selId?'selected':''}>${esc(c.name)}</option>`).join('')}
+function milkCowOpts(selId){return `<option value="herd" ${selId==='herd'?'selected':''}>🧺 Всё стадо (общий надой)</option>`+
+  db.cows.map(c=>`<option value="${c.id}" ${c.id===selId?'selected':''}>${esc(c.name)}</option>`).join('')}
+function catOpts(cats,s){return cats.map(c=>`<option ${c===s?'selected':''}>${esc(c)}</option>`).join('')}
+function toggleTheme(){document.body.classList.toggle('light');localStorage.setItem('farmPro.theme',document.body.classList.contains('light')?'light':'dark')}
+if(localStorage.getItem('farmPro.theme')==='light')document.body.classList.add('light');
+
+/* ============ РАСЧЁТЫ ============ */
+const txSum=(type,f)=>db.tx.reduce((s,t)=>t.type===type&&(!f||f(t))?s+t.amount:s,0);
+const inMk=m=>t=>mk(t.date)===m;
+function monthTotals(m){const inc=txSum('in',inMk(m)),out=txSum('out',inMk(m));return{inc,out,profit:inc-out}}
+function milkLiters(f){return db.milk.reduce((s,m)=>(!f||f(m))?s+m.liters:s,0)}
+function avgMilkPerDay(days=14){
+  const since=addDays(today(),-days);
+  const l=db.milk.filter(m=>m.date>since).reduce((s,m)=>s+m.liters,0);
+  const withMilk=new Set(db.milk.filter(m=>m.date>since).map(m=>m.date)).size||days;
+  return l/Math.max(withMilk,1);
+}
+function avgSalePrice(){
+  const sold=db.sales.slice(-30);
+  if(!sold.length)return db.settings.berryPrice&&false?0:db.settings.price;
+  const l=sold.reduce((s,x)=>s+x.liters,0),sum=sold.reduce((s,x)=>s+x.liters*x.price,0);
+  return l?sum/l:db.settings.price;
+}
+function berryStats(){
+  const cl=db.berry.collect,sa=db.berry.sales;
+  const collected=cl.reduce((s,x)=>s+x.liters,0);
+  const costs=cl.reduce((s,x)=>s+x.liters*x.costPerL,0);
+  const sold=sa.reduce((s,x)=>s+x.liters,0);
+  const revenue=sa.reduce((s,x)=>s+x.liters*x.price,0);
+  return{collected,costs,sold,revenue,profit:revenue-costs,left:collected-sold,
+    avgPrice:sold?revenue/sold:0,avgCost:collected?costs/collected:0};
+}
+function yearForecast(){
+  const y=today().slice(0,4);
+  const months=new Set([...db.tx.map(t=>t.date.slice(0,7))].filter(m=>m.startsWith(y)));
+  const haveMonths=months.size;
+  let baseMonths=haveMonths?[...months]:[...new Set(db.tx.map(t=>t.date.slice(0,7)))].sort().slice(-12);
+  if(!baseMonths.length)return null;
+  let inc=0,out=0;const profs=[];
+  baseMonths.forEach(m=>{const t=monthTotals(m);inc+=t.inc;out+=t.out;profs.push({m,t})});
+  const n=baseMonths.length;
+  const avgInc=inc/n,avgOut=out/n;
+  const last3=profs.slice(-3);const l3n=last3.length;
+  const l3Inc=last3.reduce((s,p)=>s+p.t.inc,0)/l3n;
+  const l3Out=last3.reduce((s,p)=>s+p.t.out,0)/l3n;
+  const worstInc=profs.length?Math.min(...profs.map(p=>p.t.inc)):0;
+  return{avgInc,avgOut,l3Inc,l3Out,worstInc,n};
+}
+function reminders(){
+  const list=[];const t=today();
+  db.vet.forEach(v=>{if(v.next){
+    if(v.next<=t)list.push(['🔴',`Просрочено: ${v.type} — ${cowName(v.cowId)} (было ${fmtD(v.next)})`]);
+    else if(daysBetween(t,v.next)<=7)list.push(['🟡',`${v.type} — ${cowName(v.cowId)}: ${fmtD(v.next)} (через ${daysBetween(t,v.next)} дн.)`]);
+  }});
+  db.breed.forEach(b=>{if(b.due){
+    const d=daysBetween(t,b.due);
+    if(d>=0&&d<=21)list.push(['🐮',d>=0?`Возможный отёл: ${cowName(b.cowId)} — ${fmtD(b.due)}`:`Отёл ждали ${fmtD(b.due)}: ${cowName(b.cowId)} — проверьте`]);
+  }});
+  db.feed.forEach(s=>{if(s.minStock>0&&s.stock<=s.minStock)list.push(['🌾',`Заканчивается корм: ${s.name} — осталось ${num(s.stock)} ${s.unit}`])});
+  const bm=thisMk(),bt=monthTotals(bm);
+  if(db.settings.budget>0&&bt.out>db.settings.budget)list.push(['💰',`Бюджет превышен: потрачено ${money(bt.out)} из ${money(db.settings.budget)}`]);
+  return list;
+}
+
+/* ============ ГРАФИКИ ============ */
+function prep(cv){const r=cv.getBoundingClientRect(),dpr=devicePixelRatio||1;
+  cv.width=r.width*dpr;cv.height=r.height*dpr;const x=cv.getContext('2d');x.scale(dpr,dpr);return{x,w:r.width,h:r.height}}
+function lineChart(cv,series,labels){
+  const{x,w,h}=prep(cv);
+  const all=series.flatMap(s=>s.data);if(!all.some(v=>v>0)){x.fillStyle='#8b93a7';x.font='13px sans-serif';x.textAlign='center';x.fillText('Нет данных',w/2,h/2);return}
+  const pad=34,max=Math.max(...all,1)*1.15,bw=w-pad*2,bh=h-pad*1.4;
+  x.strokeStyle='rgba(140,150,180,.25)';x.fillStyle='#8b93a7';x.font='11px sans-serif';
+  for(let i=0;i<=4;i++){const y=pad+i*bh/4;x.beginPath();x.moveTo(pad,y);x.lineTo(w-pad/8,y);x.stroke();
+    x.textAlign='right';x.fillText((max*(1-i/4)).toFixed(max<10?1:0),pad-5,y+4)}
+  const n=labels.length,px=i=>pad+(n===1?bw/2:i*bw/(n-1)),py=v=>pad+bh*(1-v/max);
+  series.forEach(s=>{
+    x.beginPath();s.data.forEach((v,i)=>i?x.lineTo(px(i),py(v)):x.moveTo(px(0),py(v)));
+    x.strokeStyle=s.color;x.lineWidth=2.5;x.stroke();
+    x.lineTo(px(n-1),pad+bh);x.lineTo(px(0),pad+bh);x.closePath();x.fillStyle=s.color+'20';x.fill();
+    x.fillStyle=s.color;s.data.forEach((v,i)=>{if(v>0){x.beginPath();x.arc(px(i),py(v),3,0,7);x.fill()}});
+  });
+  x.fillStyle='#8b93a7';x.textAlign='center';
+  labels.forEach((l,i)=>{if(n<=14||i%Math.ceil(n/7)===0)x.fillText(l,px(i),h-8)});
+  if(series.length>1)series.forEach((s,i)=>{x.fillStyle=s.color;x.fillRect(w-150+i*90,6,9,9);x.fillStyle='#8b93a7';x.textAlign='left';x.font='11px sans-serif';x.fillText(s.name,w-138+i*90,14)});
+}
+function barChart(cv,labels,a,b){
+  const{x,w,h}=prep(cv);if(!labels.length)return;
+  const pad=34,max=Math.max(...a,...(b||[0]),1)*1.15,bw=w-pad*2,bh=h-pad*1.4,step=bw/labels.length;
+  x.strokeStyle='rgba(140,150,180,.25)';x.fillStyle='#8b93a7';x.font='11px sans-serif';
+  for(let i=0;i<=4;i++){const y=pad+i*bh/4;x.beginPath();x.moveTo(pad,y);x.lineTo(w-pad/8,y);x.stroke();
+    x.textAlign='right';x.fillText((max*(1-i/4)).toFixed(max<10?1:0),pad-5,y+4)}
+  labels.forEach((l,i)=>{
+    const cx=pad+i*step,bwid=step*(b?0.3:0.55);
+    x.fillStyle='#22c55e';x.fillRect(cx+step*0.1,pad+bh*(1-a[i]/max),bwid,bh*a[i]/max);
+    if(b){x.fillStyle='#ef4444';x.fillRect(cx+step*0.55,pad+bh*(1-b[i]/max),bwid,bh*b[i]/max)}
+    x.fillStyle='#8b93a7';x.textAlign='center';x.fillText(l,cx+step/2,h-8);
+  });
+  if(b){x.font='11px sans-serif';x.fillStyle='#22c55e';x.fillRect(w-150,6,9,9);x.fillStyle='#8b93a7';x.textAlign='left';x.fillText('Доход',w-138,14);
+    x.fillStyle='#ef4444';x.fillRect(w-70,6,9,9);x.fillStyle='#8b93a7';x.fillText('Расход',w-58,14)}
+}
+function hbars(cv,items,color){
+  const{x,w,h}=prep(cv);
+  if(!items.length||!items.some(i=>i.v>0)){x.fillStyle='#8b93a7';x.font='13px sans-serif';x.textAlign='center';x.fillText('Нет данных',w/2,h/2);return}
+  const max=Math.max(...items.map(i=>i.v),1),bh=Math.min(30,(h-10)/items.length),lw=Math.min(w*0.36,210);
+  items.forEach((it,i)=>{const y=10+i*bh,bwid=(w-lw-100)*it.v/max;
+    x.fillStyle='#8b93a7';x.font='12px sans-serif';x.textAlign='right';x.fillText(it.name.slice(0,24),lw-8,y+bh/2+4);
+    x.fillStyle=color||'#ef4444';x.fillRect(lw,y+4,Math.max(bwid,2),bh-8);
+    x.fillStyle='#eef2f7';x.textAlign='left';x.font='11px sans-serif';x.fillText((it.suffix||'')+new Intl.NumberFormat('ru-RU').format(Math.round(it.v)),Math.min(lw+bwid+6,w-60),y+bh/2+4);
+  });
+}
+function donut(cv,items){
+  const{x,w,h}=prep(cv);
+  const total=items.reduce((s,i)=>s+i.v,0);
+  if(!total){x.fillStyle='#8b93a7';x.font='13px sans-serif';x.textAlign='center';x.fillText('Нет данных',w/2,h/2);return}
+  const cx=w*0.32,cy=h/2,r=Math.min(w*0.28,h*0.42);let a0=-Math.PI/2;
+  const cols=['#22c55e','#0ea5e9','#f59e0b','#8b5cf6','#ef4444','#14b8a6','#ec4899','#a3a3a3'];
+  items.forEach((it,i)=>{const a1=a0+it.v/total*Math.PI*2;
+    x.beginPath();x.moveTo(cx,cy);x.arc(cx,cy,r,a0,a1);x.closePath();x.fillStyle=cols[i%8];x.fill();
+    a0=a1});
+  x.beginPath();x.arc(cx,cy,r*0.58,0,7);x.fillStyle=getComputedStyle(document.body).getPropertyValue('--bg').trim()||'#0b0f1a';x.fill();
+  x.fillStyle='#eef2f7';x.font='bold 15px sans-serif';x.textAlign='center';x.fillText(money(total),cx,cy+5);
+  x.font='12px sans-serif';x.fillStyle='#8b93a7';
+  items.slice(0,9).forEach((it,i)=>{const y=h/2-items.length*9+i*18;
+    x.fillStyle=cols[i%8];x.fillRect(w*0.62,y-8,9,9);
+    x.fillStyle='#eef2f7';x.textAlign='left';x.fillText(it.name.slice(0,16)+' — '+Math.round(it.v/total*100)+'%',w*0.62+14,y)});
+}
+
+/* ============ РЕНДЕР ============ */
+function render(){
+  const t=document.querySelector('.nv.on').dataset.tab;
+  if(t==='vent'){renderVentAll();return}
+  if(t.indexOf('vent:')===0){renderVent(t.slice(5));return}
+  ({dash:renderDash,cows:renderCows,milk:renderMilk,sales:renderSales,fin:renderFin,feed:renderFeed,ration:renderRation,
+    vet:renderVet,calf:renderCalf,breed:renderBreed,weights:renderWeights,berry:renderBerry,reports:renderReports,
+    calc:renderCalc,anl:renderAnl,set:fillSettings}[t]||(()=>{}))();
+}
+const STATUSES={'Дойная':'g','Сухостойная':'y','На откорме':'b','Телёнок':'gr'};
+
+function renderDash(){
+  const m=thisMk(),t=monthTotals(m);
+  const milkM=milkLiters(inMk(m));
+  document.getElementById('dashKpis').innerHTML=`
+    <div class="kpi"><div class="lbl">Доходы за месяц</div><div class="val plus">${money(t.inc)}</div></div>
+    <div class="kpi"><div class="lbl">Расходы за месяц</div><div class="val minus">${money(t.out)}</div></div>
+    <div class="kpi"><div class="lbl">Прибыль за месяц</div><div class="val ${t.profit>=0?'plus':'minus'}">${money(t.profit)}</div></div>
+    <div class="kpi"><div class="lbl">Надоено за месяц</div><div class="val">${num(milkM)} л</div></div>
+    <div class="kpi"><div class="lbl">Стадо</div><div class="val">${db.cows.length} гол.</div></div><div class="kpi"><div class="lbl">Остаток молока</div><div class="val">${num(milkLiters()-db.sales.reduce((s,x)=>s+x.liters,0))} л</div></div>`;
+  // прогноз
+  const avg=avgMilkPerDay(),price=avgSalePrice();
+  const expDay=avg*price;
+  const now=new Date(),dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const rest=dim-now.getDate()+1;
+  const b=berryStats(),be=db.berry.exp;
+  document.getElementById('dashForecast').innerHTML=`
+    <div class="kpis">
+      <div class="kpi"><div class="lbl">Молоко: ожидаемый доход в день</div><div class="val plus">${money(expDay)}</div>
+        <div class="sub">в среднем ${num(avg)} л/день × ${money2(price)}/л (по данным за 14 дней)</div></div>
+      <div class="kpi"><div class="lbl">Молоко: до конца месяца</div><div class="val plus">${money(expDay*rest)}</div>
+        <div class="sub">осталось ${rest} дн.</div></div>
+      <div class="kpi"><div class="lbl">🍓 Земляника: ожидаемая прибыль сезона</div><div class="val ${(be.litersDay*be.days*(be.price-be.pickCost)-(be.other||0))>=0?'plus':'minus'}">${money(be.litersDay*be.days*(be.price-be.pickCost)-(be.other||0))}</div>
+        <div class="sub">план: ${num(be.litersDay)} л/день × ${be.days} дн. · продажа ${money2(be.price)}/л − сбор ${money2(be.pickCost)}/л</div></div>
+      <div class="kpi"><div class="lbl">Ягоды продано / остаток</div><div class="val">${num(b.sold)} л</div>
+        <div class="sub">в наличии: ${num(Math.max(b.left,0))} л</div></div>
+    </div>`;
+  const rem=reminders();
+  document.getElementById('dashRem').innerHTML=rem.length?rem.map(r=>`<div class="rem-item"><span>${r[0]}</span>${esc(r[1])}</div>`).join(''):`<div class="empty">Всё спокойно 👌 Напоминаний нет</div>`;
+  const days=[],vals=[];
+  for(let i=13;i>=0;i--){const d=addDays(today(),-i);
+    days.push(d.slice(8,10)+'.'+d.slice(5,7));
+    vals.push(db.milk.filter(x=>x.date===d).reduce((s,x)=>s+x.liters,0))}
+  requestAnimationFrame(()=>lineChart(document.getElementById('cvWeek'),[{name:'Литры',color:'#22c55e',data:vals}],days));
+  const labels=[],inc=[],out=[];
+  for(let i=5;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);
+    const key=d.toISOString().slice(0,7),tt=monthTotals(key);
+    labels.push(d.toLocaleDateString('ru-RU',{month:'short'}));inc.push(tt.inc);out.push(tt.out)}
+  requestAnimationFrame(()=>barChart(document.getElementById('cvCash'),labels,inc,out));
+  const rows=[...db.tx.map(x=>({d:x.date,txt:(x.type==='in'?'⬆ ':'⬇ ')+x.cat+(x.note?' — '+x.note:''),amt:x.type==='in'?x.amount:-x.amount})),
+    ...db.sales.map(s=>({d:s.date,txt:'🥛 Продажа молока'+(s.buyer?' — '+s.buyer:''),amt:s.liters*s.price}))]
+    .sort((a,b)=>b.d.localeCompare(a.d)).slice(0,8);
+  document.getElementById('dashLast').innerHTML=rows.length?`<table><tr><th>Дата</th><th>Операция</th><th class="num">Сумма</th></tr>${
+    rows.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${esc(r.txt)}</td><td class="num" style="color:${r.amt>=0?'var(--acc)':'var(--red)'};font-weight:700">${money(r.amt)}</td></tr>`).join('')}</table>`
+    :`<div class="empty">Пока пусто. Добавьте первую корову или запись ✨</div>`;
+}
+
+/* --- коровы --- */
+function renderCows(){
+  const q=(document.getElementById('cowSearch').value||'').toLowerCase();
+  const st=document.getElementById('cowStatus').value,sort=document.getElementById('cowSort').value;
+  let list=db.cows.filter(c=>(!q||c.name.toLowerCase().includes(q))&&(!st||c.status===st));
+  list=list.map(c=>{
+    const ml=db.milk.filter(m=>m.cowId===c.id);
+    const liters=ml.reduce((s,m)=>s+m.liters,0);
+    const spent=db.tx.filter(t=>t.type==='out'&&t.cowId===c.id).reduce((s,t)=>s+t.amount,0);
+    return{c,liters,earn:0,spent}}).sort((a,b)=>sort==='milk'?b.liters-a.liters:sort==='earn'?b.earn-a.earn:a.c.name.localeCompare(b.c.name));
+  document.getElementById('cowList').innerHTML=list.length?list.map(({c,liters,spent})=>{
+    const age=c.birth?Math.floor((Date.now()-new Date(c.birth))/31557600000):null;
+    const lastW=db.weights.filter(w=>w.cowId===c.id).sort((a,b)=>b.date.localeCompare(a.date))[0];
+    const br=db.breed.filter(b=>b.cowId===c.id).sort((a,b)=>b.date.localeCompare(a.date))[0];
+    return `<div class="cow-card">
+      <div><div class="cow-name">🐮 ${esc(c.name)} <span class="tag ${STATUSES[c.status]||'gr'}">${esc(c.status)}</span></div>
+      <div class="cow-meta">${esc(c.breed||'')}${age!==null?' • возраст: '+age+' '+pluralAge(age):''}${lastW?' • вес: '+lastW.weight+' кг':''}${br&&br.due?' • ожидается отёл: '+fmtD(br.due):''}</div>
+      <div class="cow-meta">Надоено всего: <b>${num(liters)} л</b> • прямые расходы: <b>${money(spent)}</b></div></div>
+      <div class="cow-actions">
+        <button class="btn sm" onclick="openMilk(null,'${c.id}')">🥛 Надой</button>
+        <button class="btn sm blue" onclick="openProfile('${c.id}')">📈 Профиль</button>
+        <button class="btn sm gray" onclick="openCow('${c.id}')">✏️</button>
+        <button class="btn sm red" onclick="delCow('${c.id}')">🗑</button>
+      </div></div>`}).join(''):`<div class="empty">Коров не найдено. Добавьте первую 🐄</div>`;
+}
+function pluralAge(a){return a===1?'год':(a%10>=2&&a%10<=4&&(a<10||a>20))?'года':'лет'}
+function openCow(id){
+  const c=id?cow(id):{status:'Дойная'};
+  form(id?'Редактировать корову':'Новая корова',
+    f('Кличка/номер*',`<input id="fName" value="${esc(c.name||'')}">`)+
+    `<div class="row">${f('Порода',`<input id="fBreed" value="${esc(c.breed||'')}">`)}
+      ${f('Дата рождения',`<input id="fBirth" type="date" value="${c.birth||''}">`)}</div>`+
+    f('Статус',`<select id="fStatus">${['Дойная','Сухостойная','На откорме','Телёнок'].map(s=>`<option ${c.status===s?'selected':''}>${s}</option>`).join('')}</select>`)+
+    f('Заметки',`<textarea id="fNotes" rows="2">${esc(c.notes||'')}</textarea>`),
+    ()=>{if(!V('fName')){toast('Введите кличку');return false}
+      const rec={id:id||uid(),name:V('fName'),breed:V('fBreed'),birth:V('fBirth'),status:V('fStatus'),notes:V('fNotes')};
+      if(id)db.cows[db.cows.findIndex(x=>x.id===id)]=rec;else db.cows.push(rec)});
+}
+function delCow(id){if(confirm('Удалить корову? Журналы по ней сохранятся.')){db.cows=db.cows.filter(c=>c.id!==id);save();render()}}
+
+function openProfile(id){
+  const c=cow(id);
+  const ml=db.milk.filter(m=>m.cowId===id);
+  const total=ml.reduce((s,m)=>s+m.liters,0);
+  const am=ml.filter(m=>m.session==='am').reduce((s,m)=>s+m.liters,0);
+  const pm=ml.filter(m=>m.session==='pm').reduce((s,m)=>s+m.liters,0);
+  const best=ml.length?Math.max(...ml.map(m=>m.liters)):0;
+  const last30=addDays(today(),-30);
+  const r30=ml.filter(m=>m.date>=last30);
+  const avg30=r30.length?r30.reduce((s,m)=>s+m.liters,0)/new Set(r30.map(m=>m.date)).size:0;
+  const spent=db.tx.filter(t=>t.type==='out'&&t.cowId===id).reduce((s,t)=>s+t.amount,0);
+  const feedCost=db.feedUse.filter(u=>u.cowId===id).reduce((s,u)=>{const buys=db.feedBuy.filter(b=>b.feedId===u.feedId);const cb=buys.reduce((ss,b)=>ss+b.cost,0),ca=buys.reduce((ss,b)=>ss+b.amount,0);return s+(ca?u.amount*cb/ca:0)},0);
+  const forecast=avg30*priceOf();
+  form('Профиль: '+esc(c.name),
+    `<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
+      <div class="kpi"><div class="lbl">Всего надоено</div><div class="val">${num(total)} л</div></div>
+      <div class="kpi"><div class="lbl">Утро / вечер (год)</div><div class="val" style="font-size:17px">${num(am)} / ${num(pm)}</div></div>
+      <div class="kpi"><div class="lbl">Лучший день</div><div class="val">${num(best)} л</div></div>
+      <div class="kpi"><div class="lbl">Среднее (30 дн.)</div><div class="val">${num(avg30)} л</div></div>
+      <div class="kpi"><div class="lbl">Прогноз дохода/день</div><div class="val plus">${money(forecast)}</div></div>
+      <div class="kpi"><div class="lbl">Расходы / корма</div><div class="val minus" style="font-size:17px">${money(spent)} / ${money(feedCost)}</div></div>
+    </div>
+    <h3 style="margin-top:6px">Надой за 30 дней</h3><canvas class="cv" id="pfMilk" style="height:200px"></canvas>
+    <h3 style="margin-top:12px">Привес (вес, кг)</h3><canvas class="cv" id="pfWeight" style="height:180px"></canvas>`,
+    null,'Готово');
+  document.getElementById('mOk').onclick=closeForm;
+  requestAnimationFrame(()=>{
+    const labels=[],vals=[],ams=[],pms=[];
+    for(let i=29;i>=0;i--){const d=addDays(today(),-i);
+      labels.push(d.slice(8,10)+'.'+d.slice(5,7));
+      const day=ml.filter(m=>m.date===d);
+      vals.push(day.reduce((s,m)=>s+m.liters,0));
+      ams.push(day.filter(m=>m.session==='am').reduce((s,m)=>s+m.liters,0));
+      pms.push(day.filter(m=>m.session==='pm').reduce((s,m)=>s+m.liters,0));}
+    lineChart(document.getElementById('pfMilk'),[{name:'Литры',color:'#22c55e',data:vals}],labels);
+    const ws=db.weights.filter(w=>w.cowId===id).sort((a,b)=>a.date.localeCompare(b.date));
+    lineChart(document.getElementById('pfWeight'),[{name:'Кг',color:'#0ea5e9',data:ws.map(w=>w.weight)}],ws.map(w=>w.date.slice(8,10)+'.'+w.date.slice(5,7)));
+  });
+}
+function priceOf(){return db.settings.price||0}
+
+/* --- надои --- */
+function renderMilk(){
+  const m=document.getElementById('milkMonth').value||thisMk();sel('milkMonth',m);
+  const sess=document.getElementById('milkSess').value;
+  const list=db.milk.filter(x=>mk(x.date)===m&&(!sess||x.session===sess)).sort((a,b)=>b.date.localeCompare(a.date));
+  const total=list.reduce((s,x)=>s+x.liters,0);
+  const am=list.filter(x=>x.session==='am').reduce((s,x)=>s+x.liters,0);
+  const pm=list.filter(x=>x.session==='pm').reduce((s,x)=>s+x.liters,0);
+  const avg=avgMilkPerDay();
+  document.getElementById('milkKpis').innerHTML=`
+    <div class="kpi"><div class="lbl">Надоено за месяц</div><div class="val">${num(total)} л</div></div>
+    <div class="kpi"><div class="lbl">Утро</div><div class="val amber">${num(am)} л</div></div>
+    <div class="kpi"><div class="lbl">Вечер</div><div class="val blue" style="color:var(--acc2)">${num(pm)} л</div></div>
+    <div class="kpi"><div class="lbl">Среднее в день (14 дн.)</div><div class="val">${num(avg)} л</div></div>`;
+  document.getElementById('milkList').innerHTML=list.length?`<table>
+    <tr><th>Дата</th><th>Дойка</th><th>Кто</th><th class="num">Литров</th><th></th></tr>${
+    list.map(x=>`<tr><td>${fmtD(x.date)}</td>
+      <td><span class="tag ${x.session==='am'?'y':x.session==='pm'?'b':'gr'}">${x.session==='am'?'🌅 Утро':x.session==='pm'?'🌇 Вечер':'📅 За день'}</span></td>
+      <td>${esc(cowName(x.cowId))}</td><td class="num" style="font-weight:700">${num(x.liters)}</td>
+      <td><button class="btn sm red" onclick="delRec('milk','${x.id}')">🗑</button></td></tr>`).join('')}</table>`
+    :`<div class="empty">Надоев за этот месяц нет. Можно записывать утро, вечер, за день — или сразу всё стадо 🧺</div>`;
+}
+function openMilk(id,cowId){
+  if(!db.cows.length&&!id){toast('Сначала добавьте корову');switchTo('cows');return}
+  const m=id?db.milk.find(x=>x.id===id):{date:today(),cowId:cowId||'',session:'am'};
+  form(id?'Изменить надой':'Записать надой',
+    `<div class="row">${f('Кто*',`<select id="fCow">${milkCowOpts(m.cowId)}</select>`)}
+      ${f('Дата*',`<input id="fDate" type="date" value="${m.date}">`)}</div>`+
+    `<div class="row">${f('Дойка',`<select id="fSess"><option value="am" ${m.session==='am'?'selected':''}>🌅 Утро</option><option value="pm" ${m.session==='pm'?'selected':''}>🌇 Вечер</option><option value="day" ${m.session==='day'?'selected':''}>📅 За день</option></select>`)}
+      ${f('Литров*',`<input id="fLiters" type="number" step="0.1" value="${m.liters||''}">`)}</div>`,
+    ()=>{const l=N('fLiters');if(!l){toast('Укажите литры');return false}
+      const rec={id:id||uid(),cowId:V('fCow'),date:V('fDate'),session:V('fSess'),liters:l,price:priceOf()};
+      if(id)db.milk[db.milk.findIndex(x=>x.id===id)]=rec;else db.milk.push(rec)});
+}
+function openMilkHerd(){
+  if(!db.cows.length){toast('Сначала добавьте корову');switchTo('cows');return}
+  form('Надой за всё стадо',
+    `<div class="row">${f('Дата*',`<input id="fDate" type="date" value="${today()}">`)}
+      ${f('Дойка',`<select id="fSess"><option value="am">🌅 Утро</option><option value="pm">🌇 Вечер</option><option value="day">📅 За день</option></select>`)}</div>`+
+    f('Общий надой, литров*','<input id="fLiters" type="number" step="0.1">')+
+    f('Разнос по кличкам (строка вида «Зорька 12, Машка 9»), необязательно',`<input id="fSplit" placeholder="Зорька 12, Машка 9">`),
+    ()=>{const l=N('fLiters');if(!l){toast('Укажите литры');return false}
+      const d=V('fDate'),s=V('fSess');
+      const raw=(V('fSplit')||'').trim();
+      if(raw){
+        const rows=[];let unknown='';
+        raw.split(',').map(x=>x.trim()).filter(Boolean).forEach(p=>{
+          const m2=p.match(/^(.+?)[\s\u2014-]*([0-9]+(?:[.,][0-9]+)?)$/);
+          if(!m2){unknown=p;return}
+          const nm=m2[1].trim().toLowerCase();
+          const c=db.cows.find(x=>x.name.toLowerCase()===nm)||db.cows.find(x=>x.name.toLowerCase().indexOf(nm)===0);
+          if(c)rows.push({cowId:c.id,liters:parseFloat(m2[2].replace(',','.'))});else unknown=p;
+        });
+        if(unknown){toast('Не найдена корова: '+unknown);return false}
+        if(rows.length){
+          const sum=rows.reduce((x,y)=>x+y.liters,0);
+          if(sum>l+0.001){toast('Сумма по кличкам ('+num(sum)+' л) больше общего надоя ('+num(l)+' л)');return false}
+          const rest=+(l-sum).toFixed(2);
+          rows.forEach(r=>db.milk.push({id:uid(),cowId:r.cowId,date:d,session:s,liters:r.liters,price:priceOf()}));
+          if(rest>0.001)db.milk.push({id:uid(),cowId:'herd',date:d,session:s,liters:rest,price:priceOf()});
+          toast('Разнесено по кличкам: '+rows.length+', в стадо: '+num(rest)+' л');
+          return;
+        }
+      }
+      db.milk.push({id:uid(),cowId:'herd',date:d,session:s,liters:l,price:priceOf()})});
+}
+
+/* --- продажи молока --- */
+function renderSales(){
+  const m=document.getElementById('salesMonth').value||thisMk();sel('salesMonth',m);
+  const list=db.sales.filter(s=>mk(s.date)===m).sort((a,b)=>b.date.localeCompare(a.date));
+  const sold=list.reduce((s,x)=>s+x.liters,0),rev=list.reduce((s,x)=>s+x.liters*x.price,0);
+  const produced=milkLiters(inMk(m));
+  const allSold=milkLiters(),allSa=db.sales.reduce((s,x)=>s+x.liters,0);
+  document.getElementById('salesKpis').innerHTML=`
+    <div class="kpi"><div class="lbl">Продано за месяц</div><div class="val">${num(sold)} л</div></div>
+    <div class="kpi"><div class="lbl">Выручка за месяц</div><div class="val plus">${money(rev)}</div></div>
+    <div class="kpi"><div class="lbl">Надоено за месяц</div><div class="val">${num(produced)} л</div></div>
+    <div class="kpi"><div class="lbl">Остаток молока (всё время)</div><div class="val ${allSa>allSold?'minus':''}">${num(allSold-allSa)} л</div></div>`;
+  document.getElementById('salesList').innerHTML=list.length?`<table>
+    <tr><th>Дата</th><th>Покупатель</th><th>Кому принадлежало</th><th class="num">Литров</th><th class="num">₽/л</th><th class="num">Сумма</th><th></th></tr>${
+    list.map(x=>`<tr><td>${fmtD(x.date)}</td><td>${esc(x.buyer||'—')}</td><td>${esc(cowName(x.cowId))}</td>
+      <td class="num">${num(x.liters)}</td><td class="num">${x.price}</td>
+      <td class="num" style="font-weight:700">${money(x.liters*x.price)}</td>
+      <td><button class="btn sm red" onclick="delSale('${x.id}')">🗑</button></td></tr>`).join('')}</table>`
+    :`<div class="empty">Продаж нет. Каждая продажа автоматически попадает в доходы 💰</div>`;
+}
+function openSale(){
+  const s={date:today(),price:avgSalePrice()};
+  form('Продажа молока',
+    `<div class="row">${f('Дата*',`<input id="fDate" type="date" value="${s.date}">`)}
+      ${f('Цена ₽/л*',`<input id="fPrice" type="number" step="0.01" value="${s.price.toFixed(2)}">`)}</div>`+
+    `<div class="row">${f('Литров*',`<input id="fLiters" type="number" step="0.1">`)}
+      ${f('Корова (необязательно)',`<select id="fCow">${cowOpts('')}</select>`)}</div>`+
+    f('Покупатель',`<input id="fBuyer" placeholder="частник, молокозавод...">`),
+    ()=>{const l=N('fLiters');if(!l){toast('Укажите литры');return false}
+      const tId=uid()+'s';
+      db.sales.push({id:uid(),date:V('fDate'),liters:l,price:N('fPrice'),buyer:V('fBuyer'),cowId:V('fCow'),txId:tId});
+      db.tx.push({id:tId,type:'in',date:V('fDate'),cat:'Продажа молока',amount:+(l*N('fPrice')).toFixed(2),cowId:V('fCow'),note:V('fBuyer')?('Покупатель: '+V('fBuyer')):''})});
+}
+function delSale(id){const s=db.sales.find(x=>x.id===id);
+  if(s&&s.txId)db.tx=db.tx.filter(t=>t.id!==s.txId);
+  db.sales=db.sales.filter(x=>x.id!==id);save();render()}
+
+/* --- финансы --- */
+function renderFin(){
+  const m=document.getElementById('finMonth').value||thisMk();sel('finMonth',m);
+  const ty=document.getElementById('finType').value,cat=document.getElementById('finCat').value;
+  document.getElementById('finCat').innerHTML=`<option value="">Все категории</option>`+
+    [...new Set(db.tx.map(t=>t.cat))].map(c=>`<option ${c===cat?'selected':''}>${esc(c)}</option>`).join('');
+  const t=monthTotals(m);
+  document.getElementById('finKpis').innerHTML=`
+    <div class="kpi"><div class="lbl">Доходы за месяц</div><div class="val plus">${money(t.inc)}</div></div>
+    <div class="kpi"><div class="lbl">Расходы за месяц</div><div class="val minus">${money(t.out)}</div></div>
+    <div class="kpi"><div class="lbl">Итог месяца</div><div class="val ${t.profit>=0?'plus':'minus'}">${money(t.profit)}</div></div>
+    <div class="kpi"><div class="lbl">За всё время</div><div class="val">${money(txSum('in')-txSum('out'))}</div></div>`;
+  const bud=db.settings.budget||0;
+  document.getElementById('budgetCard').innerHTML=bud>0?`<h3>Бюджет расходов на месяц</h3>
+    <div class="muted">${money(t.out)} из ${money(bud)} (${Math.min(100,Math.round(t.out/bud*100))}%) ${t.out>bud?'<span class="warn">— превышен!</span>':''}</div>
+    <div class="bar ${t.out>bud?'over':''}"><div style="width:${Math.min(100,t.out/bud*100)}%"></div></div>`
+    :`<h3>Бюджет расходов</h3><div class="muted">Не задан. Установите его в настройках — приложение предупредит о превышении.</div>`;
+  const rows=db.tx.filter(x=>mk(x.date)===m&&(!ty||x.type===ty)&&(!cat||x.cat===cat)).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('finList').innerHTML=rows.length?`<table>
+    <tr><th>Дата</th><th>Тип</th><th>Категория</th><th>Животное</th><th class="num">Сумма</th><th>Заметка</th><th></th></tr>${
+    rows.map(x=>`<tr><td>${fmtD(x.date)}</td>
+      <td><span class="tag ${x.type==='in'?'g':'r'}">${x.type==='in'?'доход':'расход'}</span></td>
+      <td>${esc(x.cat)}</td><td>${esc(cowName(x.cowId))}</td>
+      <td class="num" style="font-weight:700;color:${x.type==='in'?'var(--acc)':'var(--red)'}">${money(x.amount)}</td>
+      <td>${esc(x.note||'')}</td>
+      <td><button class="btn sm gray" onclick="openTx('${x.type}','${x.id}')">✏️</button><button class="btn sm red" onclick="delRec('tx','${x.id}')">🗑</button></td></tr>`).join('')}</table>`
+    :`<div class="empty">Записей нет.</div>`;
+}
+function openTx(type,id){
+  const t=id?db.tx.find(x=>x.id===id):{type,date:today(),cat:''};
+  const cats=type==='in'?db.settings.catsIn:db.settings.catsOut;
+  form(id?'Изменить запись':(type==='in'?'Новый доход':'Новый расход'),
+    `<div class="row">${f('Дата*',`<input id="fDate" type="date" value="${t.date}">`)}
+      ${f('Категория*',`<select id="fCat">${catOpts(cats,t.cat)}</select>`)}</div>`+
+    `<div class="row">${f('Сумма, ₽*',`<input id="fAmount" type="number" step="0.01" value="${t.amount||''}">`)}
+      ${f('Животное',`<select id="fCow">${cowOpts(t.cowId)}</select>`)}</div>`+
+    f('Заметка',`<input id="fNote" value="${esc(t.note||'')}">`),
+    ()=>{const a=N('fAmount');if(!a){toast('Укажите сумму');return false}
+      const rec={id:id||uid(),type,date:V('fDate'),cat:V('fCat'),amount:a,cowId:V('fCow'),note:V('fNote')};
+      if(id)db.tx[db.tx.findIndex(x=>x.id===id)]=rec;else db.tx.push(rec)});
+}
+
+/* --- корма --- */
+function renderFeed(){
+  document.getElementById('feedCards').innerHTML=db.feed.length?`<div class="kpis">${db.feed.map(s=>{
+    const low=s.minStock>0&&s.stock<=s.minStock;
+    return `<div class="kpi"><div class="lbl">${esc(s.name)}</div>
+      <div class="val ${low?'minus':''}">${num(s.stock)} ${esc(s.unit)}</div>
+      <div class="sub">${low?'⚠️ мало! ':''}закуплено ${num(s.bought)} • израсходовано ${num(s.used)}</div>
+      <div style="display:flex;gap:6px;margin-top:8px"><button class="btn sm gray" onclick="editStock('${s.id}')">Правка</button><button class="btn sm red" onclick="delRec('feed','${s.id}')">🗑</button></div></div>`}).join('')}</div>`
+    :`<div class="empty">Склад пуст. Добавьте корм — например, «Сено, кг» 🌾</div>`;
+  document.getElementById('feedBuyLog').innerHTML=db.feedBuy.length?`<table><tr><th>Дата</th><th>Корм</th><th class="num">Кол-во</th><th class="num">Стоимость</th><th></th></tr>${
+    db.feedBuy.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(p=>`<tr><td>${fmtD(p.date)}</td><td>${esc(feedNm(p.feedId))}</td>
+      <td class="num">${num(p.amount)}</td><td class="num">${money(p.cost)}</td>
+      <td><button class="btn sm red" onclick="delBuy('${p.id}')">🗑</button></td></tr>`).join('')}</table>`:`<div class="empty">Закупок нет.</div>`;
+  document.getElementById('feedUseLog').innerHTML=db.feedUse.length?`<table><tr><th>Дата</th><th>Корм</th><th>Кому</th><th class="num">Кол-во</th><th></th></tr>${
+    db.feedUse.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(u=>`<tr><td>${fmtD(u.date)}</td><td>${esc(feedNm(u.feedId))}</td>
+      <td>${esc(cowName(u.cowId))}</td><td class="num">${num(u.amount)}</td>
+      <td><button class="btn sm red" onclick="delUse('${u.id}')">🗑</button></td></tr>`).join('')}</table>`:`<div class="empty">Раздач нет.</div>`;
+}
+const feedNm=id=>(db.feed.find(s=>s.id===id)||{}).name||'—';
+function openFeed(){
+  form('Новый корм',
+    `<div class="row">${f('Название*','<input id="fName" placeholder="Сено, комбикорм...">')}
+      ${f('Единица','<select id="fUnit"><option>кг</option><option>л</option><option>т</option><option>мешок</option><option>тюк</option></select>')}</div>`+
+    `<div class="row">${f('Стартовый остаток','<input id="fStock" type="number" step="0.1" value="0">')}
+      ${f('Минимум для предупреждения','<input id="fMin" type="number" step="0.1" value="0">')}</div>`,
+    ()=>{if(!V('fName')){toast('Введите название');return false}
+      db.feed.push({id:uid(),name:V('fName'),unit:V('fUnit'),stock:N('fStock'),bought:N('fStock'),used:0,minStock:N('fMin')})});
+}
+function buyFeed(){
+  if(!db.feed.length){toast('Сначала добавьте корм');return}
+  form('Закупка корма',
+    `<div class="row">${f('Корм*',`<select id="fFeed">${db.feed.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>`)}
+      ${f('Дата*',`<input id="fDate" type="date" value="${today()}">`)}</div>`+
+    `<div class="row">${f('Количество*','<input id="fAmount" type="number" step="0.1">')}
+      ${f('Стоимость, ₽*','<input id="fCost" type="number" step="0.01">')}</div>`,
+    ()=>{const a=N('fAmount');if(!a){toast('Укажите количество');return false}
+      const s=db.feed.find(x=>x.id===V('fFeed'));s.stock+=a;s.bought+=a;
+      db.feedBuy.push({id:uid(),date:V('fDate'),feedId:s.id,amount:a,cost:N('fCost')});
+      if(N('fCost')>0)db.tx.push({id:uid()+'f',type:'out',date:V('fDate'),cat:'Корма',amount:N('fCost'),cowId:'',note:`Закупка: ${s.name}, ${num(a)} ${s.unit}`});
+      toast('Закупка учтена, расход добавлен')});
+}
+function useFeed(){
+  const avail=db.feed.filter(s=>s.stock>0);
+  if(!avail.length){toast('Склад пуст');return}
+  form('Раздача корма',
+    `<div class="row">${f('Корм*',`<select id="fFeed">${avail.map(s=>`<option value="${s.id}">${esc(s.name)} (осталось ${num(s.stock)} ${s.unit})</option>`).join('')}</select>`)}
+      ${f('Дата*',`<input id="fDate" type="date" value="${today()}">`)}</div>`+
+    `<div class="row">${f('Количество*','<input id="fAmount" type="number" step="0.1">')}
+      ${f('Животное',`<select id="fCow">${cowOpts('')}</select>`)}</div>`,
+    ()=>{const a=N('fAmount');if(!a){toast('Укажите количество');return false}
+      const s=db.feed.find(x=>x.id===V('fFeed'));
+      if(a>s.stock){toast(`На складе только ${num(s.stock)} ${s.unit}`);return false}
+      s.stock-=a;s.used+=a;
+      db.feedUse.push({id:uid(),date:V('fDate'),feedId:s.id,cowId:V('fCow'),amount:a})});
+}
+function editStock(id){const s=db.feed.find(x=>x.id===id);
+  form('Правка остатка',f(`Новое количество «${esc(s.name)}», ${esc(s.unit)}`,`<input id="fStock" type="number" step="0.1" value="${s.stock}">`),
+    ()=>{s.stock=N('fStock')})}
+function delBuy(id){const p=db.feedBuy.find(x=>x.id===id);const s=db.feed.find(x=>x.id===p.feedId);
+  if(s){s.stock-=p.amount;s.bought-=p.amount}
+  db.feedBuy=db.feedBuy.filter(x=>x.id!==id);save();render()}
+function delUse(id){const u=db.feedUse.find(x=>x.id===id);const s=db.feed.find(x=>x.id===u.feedId);
+  if(s){s.stock+=u.amount;s.used-=u.amount}
+  db.feedUse=db.feedUse.filter(x=>x.id!==id);save();render()}
+
+/* --- ветеринария --- */
+function renderVet(){
+  const rows=db.vet.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('vetList').innerHTML=rows.length?`<table>
+    <tr><th>Дата</th><th>Животное</th><th>Процедура</th><th class="num">Стоимость</th><th>Следующая</th><th></th></tr>${
+    rows.map(v=>{const soon=v.next&&v.next<=today();
+      return `<tr><td>${fmtD(v.date)}</td><td>${esc(cowName(v.cowId))}</td><td>${esc(v.type)}</td>
+      <td class="num">${v.cost?money(v.cost):'—'}</td>
+      <td>${v.next?`<span class="${soon?'warn':''}">${fmtD(v.next)}${soon?' ⚠️ пора':''}</span>`:'—'}</td>
+      <td><button class="btn sm red" onclick="delRec('vet','${v.id}')">🗑</button></td></tr>`}).join('')}</table>`
+    :`<div class="empty">Записей нет. Записи с ценой автоматически попадают в расходы 💉</div>`;
+}
+function openVet(){
+  form('Ветеринарная запись',
+    `<div class="row">${f('Дата*',`<input id="fDate" type="date" value="${today()}">`)}
+      ${f('Животное',`<select id="fCow">${cowOpts('')}</select>`)}</div>`+
+    f('Процедура*','<input id="fType" placeholder="прививка, осмотр, лечение...">')+
+    `<div class="row">${f('Стоимость, ₽','<input id="fCost" type="number" step="0.01">')}
+      ${f('Следующая процедура','<input id="fNext" type="date">')}</div>`,
+    ()=>{if(!V('fType')){toast('Укажите процедуру');return false}
+      db.vet.push({id:uid(),date:V('fDate'),cowId:V('fCow'),type:V('fType'),cost:N('fCost'),next:V('fNext')});
+      if(N('fCost')>0)db.tx.push({id:uid()+'v',type:'out',date:V('fDate'),cat:'Ветеринария',amount:N('fCost'),cowId:V('fCow'),note:V('fType')})});
+}
+
+/* --- отёлы --- */
+function renderCalf(){
+  const rows=db.calf.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('calfList').innerHTML=rows.length?`<table>
+    <tr><th>Дата</th><th>Мать</th><th>Телёнок</th><th>Пол</th><th>Заметка</th><th></th></tr>${
+    rows.map(c=>`<tr><td>${fmtD(c.date)}</td><td>${esc(cowName(c.cowId))}</td><td>${esc(c.name)}</td>
+      <td>${esc(c.sex)}</td><td>${esc(c.note||'')}</td>
+      <td><button class="btn sm red" onclick="delRec('calf','${c.id}')">🗑</button></td></tr>`).join('')}</table>`
+    :`<div class="empty">Отёлов нет 🐮</div>`;
+}
+function openCalf(){
+  if(!db.cows.length){toast('Сначала добавьте корову');switchTo('cows');return}
+  form('Новый отёл',
+    `<div class="row">${f('Дата*',`<input id="fDate" type="date" value="${today()}">`)}
+      ${f('Мать*',`<select id="fCow">${cowOpts('',false)}</select>`)}</div>`+
+    `<div class="row">${f('Кличка телёнка','<input id="fName">')}
+      ${f('Пол','<select id="fSex"><option>Бычок</option><option>Тёлочка</option></select>')}</div>`+
+    `<div class="field"><label><input type="checkbox" id="fAdd" style="width:auto" checked> Добавить телёнка в стадо</label></div>`+
+    f('Заметка','<input id="fNote">'),
+    ()=>{if(!V('fCow')){toast('Выберите мать');return false}
+      db.calf.push({id:uid(),date:V('fDate'),cowId:V('fCow'),name:V('fName'),sex:V('fSex'),note:V('fNote')});
+      if(Ch('fAdd'))db.cows.push({id:uid(),name:V('fName')||'Телёнок от '+fmtD(V('fDate')),birth:V('fDate'),status:'Телёнок',breed:(cow(V('fCow'))||{}).breed||'',notes:''})});
+}
+
+/* --- осеменения --- */
+function renderBreed(){
+  const rows=db.breed.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('breedList').innerHTML=rows.length?`<table>
+    <tr><th>Дата осеменения</th><th>Корова</th><th>Способ</th><th>Ожидаемый отёл</th><th>Статус</th><th></th></tr>${
+    rows.map(b=>{const d=b.due?daysBetween(today(),b.due):null;
+      let tag='—';
+      if(d!==null){if(d>0)tag=`<span class="tag y">через ${d} дн.</span>`;
+        else if(d>=-7)tag=`<span class="tag g">пора проверять</span>`;
+        else tag=`<span class="tag gr">прошло ${-d} дн.</span>`}
+      return `<tr><td>${fmtD(b.date)}</td><td>${esc(cowName(b.cowId))}</td><td>${esc(b.method||'—')}</td>
+      <td>${b.due?fmtD(b.due):'—'}</td><td>${tag}</td>
+      <td><button class="btn sm red" onclick="delRec('breed','${b.id}')">🗑</button></td></tr>`}).join('')}</table>`
+    :`<div class="empty">Осеменений нет. Дата отёла считается автоматически: +283 дня ❤️</div>`;
+}
+function openBreed(){
+  if(!db.cows.length){toast('Сначала добавьте корову');switchTo('cows');return}
+  form('Новое осеменение',
+    `<div class="row">${f('Дата*',`<input id="fDate" type="date" value="${today()}">`)}
+      ${f('Корова*',`<select id="fCow">${cowOpts('',false)}</select>`)}</div>`+
+    f('Способ',`<select id="fMethod"><option>Искусственное</option><option>Естественное</option></select>`)+
+    f('Бык / заметка','<input id="fNote">'),
+    ()=>{if(!V('fCow')){toast('Выберите корову');return false}
+      const d=V('fDate');
+      db.breed.push({id:uid(),date:d,cowId:V('fCow'),method:V('fMethod'),due:addDays(d,283),note:V('fNote')});
+      toast('Отёл ожидается '+fmtD(addDays(d,283)))});
+}
+
+/* --- привесы --- */
+function renderWeights(){
+  const rows=db.weights.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('weightList').innerHTML=rows.length?`<table>
+    <tr><th>Дата</th><th>Животное</th><th class="num">Вес, кг</th><th>Динамика</th><th></th></tr>${
+    rows.map(w=>{const prev=db.weights.filter(x=>x.cowId===w.cowId&&x.date<w.date).sort((a,b)=>b.date.localeCompare(a.date))[0];
+      const diff=prev?w.weight-prev.weight:null;
+      return `<tr><td>${fmtD(w.date)}</td><td>${esc(cowName(w.cowId))}</td><td class="num">${w.weight}</td>
+      <td>${diff===null?'первое взвешивание':`<span class="tag ${diff>=0?'g':'r'}">${diff>0?'+':''}${diff} кг</span>`}</td>
+      <td><button class="btn sm red" onclick="delRec('weights','${w.id}')">🗑</button></td></tr>`}).join('')}</table>`
+    :`<div class="empty">Взвешиваний нет. Записывайте вес — увидите привес на графике в профиле коровы ⚖️</div>`;
+}
+function openWeight(){
+  if(!db.cows.length){toast('Сначала добавьте животное');switchTo('cows');return}
+  form('Взвешивание',
+    `<div class="row">${f('Дата*',`<input id="fDate" type="date" value="${today()}">`)}
+      ${f('Животное*',`<select id="fCow">${cowOpts('',false)}</select>`)}</div>`+
+    f('Вес, кг*','<input id="fWeight" type="number" step="0.1">'),
+    ()=>{if(!N('fWeight')||!V('fCow')){toast('Заполните поля');return false}
+      db.weights.push({id:uid(),date:V('fDate'),cowId:V('fCow'),weight:N('fWeight')})});
+}
+
+/* --- земляника --- */
+function renderBerry(){
+  const b=berryStats(),be=db.berry.exp;
+  document.getElementById('berryKpis').innerHTML=`
+    <div class="kpi"><div class="lbl">Собрано всего</div><div class="val">${num(b.collected)} л</div>
+      <div class="sub">затраты на сбор: ${money(b.costs)}</div></div>
+    <div class="kpi"><div class="lbl">Продано всего</div><div class="val">${num(b.sold)} л</div>
+      <div class="sub">выручка: ${money(b.revenue)}</div></div>
+    <div class="kpi"><div class="lbl">Прибыль по ягодам</div><div class="val ${b.profit>=0?'plus':'minus'}">${money(b.profit)}</div></div>
+    <div class="kpi"><div class="lbl">Остаток на руках</div><div class="val ${b.left>0?'amber':''}">${num(b.left)} л</div></div>
+    <div class="kpi"><div class="lbl">Средняя цена продажи</div><div class="val">${money2(b.avgPrice)}/л</div>
+      <div class="sub">себестоимость сбора: ${money2(b.avgCost)}/л</div></div>`;
+  document.getElementById('berryForecast').innerHTML=`<h3>🔮 План сезона</h3>
+    <div class="muted" style="margin-bottom:8px">План: собирать <b>${num(be.litersDay)} л/день</b> в течение <b>${be.days} дн.</b> · продажа <b>${money2(be.price)}/л</b> · сбор <b>${money2(be.pickCost)}/л</b></div>
+    <div class="kpis">
+      <div class="kpi"><div class="lbl">Ожидаемый сбор</div><div class="val">${num(be.litersDay*be.days)} л</div></div>
+      <div class="kpi"><div class="lbl">Ожидаемая выручка</div><div class="val plus">${money(be.litersDay*be.days*be.price)}</div></div>
+      <div class="kpi"><div class="lbl">Ожидаемые затраты на сбор</div><div class="val minus">${money(be.litersDay*be.days*be.pickCost)}</div></div>
+      <div class="kpi"><div class="lbl">Ожидаемая прибыль</div><div class="val ${(be.litersDay*be.days*(be.price-be.pickCost)-(be.other||0))>=0?'plus':'minus'}">${money(be.litersDay*be.days*(be.price-be.pickCost)-(be.other||0))}</div></div>
+    </div>`;
+  const days=[],col=[],sold=[];
+  const all=[...new Set([...db.berry.collect,...db.berry.sales].map(x=>x.date))].sort().slice(-30);
+  all.forEach(d=>{days.push(d.slice(8,10)+'.'+d.slice(5,7));
+    col.push(db.berry.collect.filter(x=>x.date===d).reduce((s,x)=>s+x.liters,0));
+    sold.push(db.berry.sales.filter(x=>x.date===d).reduce((s,x)=>s+x.liters,0))});
+  requestAnimationFrame(()=>lineChart(document.getElementById('cvBerry'),
+    [{name:'Сбор, л',color:'#f59e0b',data:col},{name:'Продажи, л',color:'#0ea5e9',data:sold}],days));
+  document.getElementById('berryCollectLog').innerHTML=db.berry.collect.length?`<table>
+    <tr><th>Дата</th><th class="num">Литров</th><th class="num">Цена сбора ₽/л</th><th class="num">Затраты</th><th>Заметка</th><th></th></tr>${
+    db.berry.collect.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(c=>`<tr><td>${fmtD(c.date)}</td>
+      <td class="num">${num(c.liters)}</td><td class="num">${c.costPerL}</td>
+      <td class="num" style="color:var(--red);font-weight:700">${money(c.liters*c.costPerL)}</td>
+      <td>${esc(c.note||'')}</td>
+      <td><button class="btn sm red" onclick="delBerry('collect','${c.id}')">🗑</button></td></tr>`).join('')}</table>`
+    :`<div class="empty">Сбора пока нет 🍓</div>`;
+  document.getElementById('berrySalesLog').innerHTML=db.berry.sales.length?`<table>
+    <tr><th>Дата</th><th>Покупатель</th><th class="num">Литров</th><th class="num">₽/л</th><th class="num">Выручка</th><th></th></tr>${
+    db.berry.sales.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(s=>`<tr><td>${fmtD(s.date)}</td>
+      <td>${esc(s.buyer||'—')}</td><td class="num">${num(s.liters)}</td><td class="num">${s.price}</td>
+      <td class="num" style="color:var(--acc);font-weight:700">${money(s.liters*s.price)}</td>
+      <td><button class="btn sm red" onclick="delBerry('sales','${s.id}')">🗑</button></td></tr>`).join('')}</table>`
+    :`<div class="empty">Продаж пока нет 💰</div>`;
+}
+function openBerryCollect(){
+  form('Сбор земляники',
+    `<div class="row">${f('Дата*',`<input id="fDate" type="date" value="${today()}">`)}
+      ${f('Собрано, литров*','<input id="fLiters" type="number" step="0.1">')}</div>`+
+    `<div class="row">${f('Цена сбора, ₽/л',`<input id="fCost" type="number" step="0.01" value="${db.settings.berryCost}">`)}
+      ${f('Заметка (кто собирал, участок...)',`<input id="fNote">`)}</div>`,
+    ()=>{const l=N('fLiters');if(!l){toast('Укажите литры');return false}
+      const tId=uid()+'bc';
+      db.berry.collect.push({id:uid(),date:V('fDate'),liters:l,costPerL:N('fCost'),note:V('fNote'),txId:tId});
+      const cost=l*N('fCost');
+      if(cost>0)db.tx.push({id:tId,type:'out',date:V('fDate'),cat:'Ягоды (сбор)',amount:+cost.toFixed(2),cowId:'',note:'Сбор ягод: '+num(l)+' л'+(V('fNote')?' — '+V('fNote'):'')});
+      toast('Сбор записан'+(cost?' и добавлен в расходы':''))});
+}
+function openBerrySale(){
+  form('Продажа земляники',
+    `<div class="row">${f('Дата*',`<input id="fDate" type="date" value="${today()}">`)}
+      ${f('Продано, литров*','<input id="fLiters" type="number" step="0.1">')}</div>`+
+    `<div class="row">${f('Цена ₽/л*',`<input id="fPrice" type="number" step="0.01" value="${db.settings.berryPrice}">`)}
+      ${f('Покупатель','<input id="fBuyer" placeholder="частник, рынок...">')}</div>`,
+    ()=>{const l=N('fLiters');if(!l){toast('Укажите литры');return false}
+      const avail=berryStats().left;
+      if(l>Math.max(avail,0)&&!confirm(`В наличии только ${num(Math.max(avail,0))} л. Всё равно записать продажу?`))return false;
+      const tId=uid()+'bs';
+      db.berry.sales.push({id:uid(),date:V('fDate'),liters:l,price:N('fPrice'),buyer:V('fBuyer'),txId:tId});
+      db.tx.push({id:tId,type:'in',date:V('fDate'),cat:'Продажа ягод',amount:+(l*N('fPrice')).toFixed(2),cowId:'',note:'Ягоды'+(V('fBuyer')?' — '+V('fBuyer'):'')});
+      toast('Продажа записана, доход добавлен')});
+}
+function openBerrySet(){
+  const e=db.berry.exp;
+  form('План сезона ягод',
+    `<div class="row">${f('Что собираем',`<input id="fName" value="${esc(e.name)}">`)}
+      ${f('Планирую собирать, л/день*',`<input id="fLD" type="number" step="0.1" value="${e.litersDay}">`)}</div>`+
+    `<div class="row">${f('Дней сбора',`<input id="fDays" type="number" value="${e.days}">`)}
+      ${f('Цена продажи, ₽/л*',`<input id="fPrice" type="number" step="0.01" value="${e.price}">`)}</div>`+
+    f('Стоимость сбора, ₽/л*',`<input id="fPick" type="number" step="0.01" value="${e.pickCost}">`)+
+    f('Прочие расходы сезона, ₽',`<input id="fOther" type="number" step="0.01" value="${e.other||0}">`),
+    ()=>{db.berry.exp={name:V('fName')||'Земляника',litersDay:N('fLD'),days:N('fDays')||1,price:N('fPrice'),pickCost:N('fPick'),other:N('fOther')};
+      db.settings.berryPrice=N('fPrice');db.settings.berryCost=N('fPick');
+      toast('План сохранён')});
+}
+function delBerry(kind,id){
+  const arr=db.berry[kind],rec=arr.find(x=>x.id===id);
+  if(rec&&rec.txId)db.tx=db.tx.filter(t=>t.id!==rec.txId);
+  db.berry[kind]=arr.filter(x=>x.id!==id);save();render();
+}
+
+/* --- аналитика --- */
+function renderAnl(){
+  const years=[...new Set(db.tx.map(t=>t.date.slice(0,4)))].sort().reverse();
+  if(!years.length)years.push(String(new Date().getFullYear()));
+  const yrEl=document.getElementById('anlYear');
+  if(yrEl.dataset.y!==years.join()){yrEl.innerHTML=years.map(y=>`<option>${y}</option>`).join('');yrEl.dataset.y=years.join()}
+  const year=yrEl.value||years[0];
+  // прогноз на год
+  const yf=yearForecast();
+  if(yf){
+    const act=db.settings.budget?null:null;
+    document.getElementById('yearForecast').innerHTML=`
+    <div class="muted" style="margin-bottom:10px">На основе ${yf.n} мес. с данными за ${year} год. Прогноз — это средние значения × 12 месяцев.</div>
+    <table>
+      <tr><th>Сценарий</th><th class="num">Доход / год</th><th class="num">Расход / год</th><th class="num">Прибыль / год</th></tr>
+      <tr><td><b>По среднему месяцу</b></td>
+        <td class="num" style="color:var(--acc)">${money(yf.avgInc*12)}</td>
+        <td class="num" style="color:var(--red)">${money(yf.avgOut*12)}</td>
+        <td class="num" style="font-weight:800">${money((yf.avgInc-yf.avgOut)*12)}</td></tr>
+      <tr><td><b>По последним 3 месяцам</b></td>
+        <td class="num" style="color:var(--acc)">${money(yf.l3Inc*12)}</td>
+        <td class="num" style="color:var(--red)">${money(yf.l3Out*12)}</td>
+        <td class="num" style="font-weight:800">${money((yf.l3Inc-yf.l3Out)*12)}</td></tr>
+      <tr><td><b>Консервативный (худший месяц × 12)</b></td>
+        <td class="num" style="color:var(--acc)">${money(yf.worstInc*12)}</td>
+        <td class="num" style="color:var(--red)">${money(yf.avgOut*12)}</td>
+        <td class="num" style="font-weight:800">${money((yf.worstInc-yf.avgOut)*12)}</td></tr>
+    </table>
+    <div class="muted" style="margin-top:10px">Плюс ягоды: при выполнении плана сезона добавится ${money(db.berry.exp.litersDay*db.berry.exp.days*(db.berry.exp.price-db.berry.exp.pickCost)-(db.berry.exp.other||0))} прибыли.</div>`;
+  }else document.getElementById('yearForecast').innerHTML=`<div class="empty">Добавьте первые доходы и расходы — появится прогноз на год 🔮</div>`;
+  // по месяцам
+  const labels=[],inc=[],out=[];
+  for(let m=1;m<=12;m++){const key=`${year}-${String(m).padStart(2,'0')}`,t=monthTotals(key);
+    labels.push(new Date(year,m-1).toLocaleDateString('ru-RU',{month:'short'}));inc.push(t.inc);out.push(t.out)}
+  requestAnimationFrame(()=>barChart(document.getElementById('cvMonths'),labels,inc,out));
+  // утро/вечер 30 дней
+  const l2=[],am2=[],pm2=[];
+  for(let i=29;i>=0;i--){const d=addDays(today(),-i);
+    l2.push(d.slice(8,10)+'.'+d.slice(5,7));
+    am2.push(db.milk.filter(x=>x.date===d&&x.session==='am').reduce((s,x)=>s+x.liters,0));
+    pm2.push(db.milk.filter(x=>x.date===d&&x.session==='pm').reduce((s,x)=>s+x.liters,0))}
+  requestAnimationFrame(()=>lineChart(document.getElementById('cvAmPm'),
+    [{name:'Утро',color:'#f59e0b',data:am2},{name:'Вечер',color:'#0ea5e9',data:pm2}],l2));
+  // средняя цена продаж
+  const pl=[],pv=[];
+  for(let m=1;m<=12;m++){const key=`${year}-${String(m).padStart(2,'0')}`;
+    const s=db.sales.filter(x=>mk(x.date)===key);
+    const l=s.reduce((a,x)=>a+x.liters,0);
+    pl.push(new Date(year,m-1).toLocaleDateString('ru-RU',{month:'short'}));
+    pv.push(l?s.reduce((a,x)=>a+x.liters*x.price,0)/l:0)}
+  requestAnimationFrame(()=>lineChart(document.getElementById('cvPrice'),[{name:'₽/л',color:'#8b5cf6',data:pv}],pl));
+  // категории
+  const byCat={};db.tx.filter(t=>t.type==='out'&&t.date.startsWith(year)).forEach(t=>byCat[t.cat]=(byCat[t.cat]||0)+t.amount);
+  const items=Object.entries(byCat).map(([name,v])=>({name,v})).sort((a,b)=>b.v-a.v).slice(0,9);
+  requestAnimationFrame(()=>donut(document.getElementById('cvCats'),items));
+  // топ коров
+  const since=addDays(today(),-30);
+  requestAnimationFrame(()=>hbars(document.getElementById('cvCows'),
+    db.cows.map(c=>({name:c.name,v:db.milk.filter(x=>x.cowId===c.id&&x.date>=since).reduce((s,x)=>s+x.liters,0)})).sort((a,b)=>b.v-a.v),'#22c55e'));
+  // кормозатраты
+  requestAnimationFrame(()=>hbars(document.getElementById('cvFeedCows'),
+    db.cows.map(c=>({name:c.name,v:db.feedUse.filter(u=>u.cowId===c.id).reduce((s,u)=>{
+      const buys=db.feedBuy.filter(b=>b.feedId===u.feedId);
+      const cb=buys.reduce((a,b)=>a+b.cost,0),ca=buys.reduce((a,b)=>a+b.amount,0);
+      return s+(ca?u.amount*cb/ca:0)},0)})).sort((a,b)=>b.v-a.v),'#f59e0b'));
+  // по годам
+  const yrs=[...new Set([...db.tx.map(t=>t.date.slice(0,4))])].sort();
+  if(yrs.length){const yl=[],yi=[],yo=[];
+    yrs.forEach(y=>{yl.push(y);
+      yi.push(db.tx.filter(t=>t.type==='in'&&t.date.startsWith(y)).reduce((s,t)=>s+t.amount,0));
+      yo.push(db.tx.filter(t=>t.type==='out'&&t.date.startsWith(y)).reduce((s,t)=>s+t.amount,0))});
+    requestAnimationFrame(()=>barChart(document.getElementById('cvYears'),yl,yi,yo));}
+}
+
+/* --- настройки --- */
+function fillSettings(){
+  sel('setPrice',db.settings.price);sel('setBudget',db.settings.budget);
+  sel('setBerryPrice',db.settings.berryPrice);sel('setBerryCost',db.settings.berryCost);
+  document.getElementById('setCatsOut').value=db.settings.catsOut.join('\n');
+  document.getElementById('setCatsIn').value=db.settings.catsIn.join('\n');
+}
+function saveSettings(){
+  db.settings.price=N('setPrice');db.settings.budget=N('setBudget');
+  db.settings.berryPrice=N('setBerryPrice');db.settings.berryCost=N('setBerryCost');
+  const parse=t=>t.value.split('\n').map(s=>s.trim()).filter(Boolean);
+  db.settings.catsOut=parse(document.getElementById('setCatsOut'));
+  db.settings.catsIn=parse(document.getElementById('setCatsIn'));
+  save();toast('Настройки сохранены');
+}
+function wipe(){if(confirm('Удалить ВСЕ данные без возможности восстановления?')){localStorage.removeItem(LS);location.reload()}}
+
+/* --- экспорт/импорт --- */
+function exportData(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));
+  a.download='ferma-pro-'+today()+'.json';a.click();toast('Файл сохранён');
+}
+function importFile(input){
+  const f=input.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);
+    if(!d.cows||!d.tx)throw 0;
+    db=d;save();toast('Данные загружены');render();
+  }catch(e){toast('Файл не подходит')}};
+  r.readAsText(f);input.value='';
+}
+
+/* --- удаление записей --- */
+function delRec(arrName,id){
+  db[arrName]=db[arrName].filter(x=>x.id!==id);save();render();
+}
+
+
+/* ============ КОРМЛЕНИЕ ============ */
+const FREF={'Сено луговое':{ke:0.45,prot:40},'Сено люцерновое':{ke:0.5,prot:160},'Силос кукурузный':{ke:0.2,prot:20},'Сенаж':{ke:0.3,prot:40},'Комбикорм':{ke:1,prot:110},'Ячмень':{ke:1.1,prot:85},'Овёс':{ke:1,prot:80},'Пшеница':{ke:1.2,prot:110},'Отруби пшеничные':{ke:0.75,prot:100},'Жмых подсолнечный':{ke:1.05,prot:300},'Свёкла кормовая':{ke:0.12,prot:9},'Морковь':{ke:0.14,prot:8},'Тыква':{ke:0.12,prot:7},'Картофель':{ke:0.3,prot:16},'Зелёная трава':{ke:0.18,prot:25},'Солома':{ke:0.25,prot:12},'Обрат':{ke:0.13,prot:320}};
+let rat={items:[]};
+function cowWeight(id){const w=db.weights.filter(x=>x.cowId===id).sort((a,b)=>b.date.localeCompare(a.date))[0];return w?w.weight:0}
+function cowMilkStats(id){const ms=db.milk.filter(x=>x.cowId===id&&x.date>=addDays(today(),-30));const s=ms.reduce((a,x)=>a+x.liters,0);return{avg30:s/30}}
+function rationNorm(status,weight,liters){let ke,prot;
+  if(status==='Дойная'){ke=1.5+0.5*liters;prot=ke*110}
+  else if(status==='Сухостойная'){ke=1+0.35*weight/100;prot=ke*90}
+  else if(status==='На откорме'){ke=1+2.2*weight/100;prot=ke*90}
+  else{ke=1.2+0.4*weight/100;prot=ke*100}
+  return{ke:ke,prot:prot,kcal:ke*2500,water:status==='Дойная'?40+5*liters:35,salt:status==='Дойная'?60+5*liters:40}}
+function ratCowChanged(){const c=cow(V('ratCow'));
+  if(c&&c.status==='Дойная'){const ms=db.milk.filter(x=>x.cowId===c.id&&x.date>=addDays(today(),-14));
+    if(ms.length){const ds=new Set(ms.map(x=>x.date)).size||14;sel('ratLiters',+(ms.reduce((s,x)=>s+x.liters,0)/ds).toFixed(1))}}
+  calcRat()}
+function ratAdd(){const nm=V('ratFeedAdd');
+  if(nm&&FREF[nm]&&!rat.items.some(i=>i.name===nm))rat.items.push({name:nm,kg:0});
+  sel('ratFeedAdd','');calcRat()}
+function ratKg(i,v){rat.items[i].kg=Math.max(0,parseFloat(String(v).replace(',','.'))||0);calcRat()}
+function ratDel(i){rat.items.splice(i,1);calcRat()}
+function renderRation(){
+  document.getElementById('ratFeedAdd').innerHTML='<option value="">— добавить корм из справочника —</option>'+Object.keys(FREF).map(k=>'<option>'+esc(k)+'</option>').join('');
+  const selEl=document.getElementById('ratCow');
+  selEl.innerHTML=db.cows.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('')||'';
+  if(!db.cows.length){document.getElementById('ratNorm').innerHTML='<div class="empty">Сначала добавьте животное в разделе «Коровы»</div>';document.getElementById('ratRows').innerHTML='';document.getElementById('ratTot').innerHTML='';document.getElementById('ratAdvice').innerHTML=''}
+  else calcRat();
+  document.getElementById('ratRef').innerHTML=`<table><tr><th>Корм</th><th class="num">к.е./кг</th><th class="num">Протеин, г/кг</th><th class="num">ккал/кг</th><th class="num">кг на 1 л молока</th></tr>`+
+    Object.keys(FREF).map(k=>`<tr><td>${esc(k)}${db.customFeeds&&db.customFeeds[k]?' <span class="tag y">свой</span>':''}</td><td class="num">${num(FREF[k].ke)}</td><td class="num">${num(FREF[k].prot)}</td><td class="num">${num(FREF[k].ke*2500)}</td><td class="num">${FREF[k].ke>0.05?(0.5/FREF[k].ke).toFixed(2):'—'}</td></tr>`).join('')+`</table>`}
+function calcRat(){const c=cow(V('ratCow'));if(!c)return;
+  const n=rationNorm(c.status,cowWeight(c.id),N('ratLiters'));
+  document.getElementById('ratNorm').innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="lbl">Норма к.е.</div><div class="val">${num(n.ke)}</div></div>
+    <div class="kpi"><div class="lbl">Энергия, ккал</div><div class="val">${num(n.kcal)}</div></div>
+    <div class="kpi"><div class="lbl">Протеин, г</div><div class="val">${num(n.prot)}</div></div>
+    <div class="kpi"><div class="lbl">Вода, л</div><div class="val">${num(n.water)}</div></div>
+    <div class="kpi"><div class="lbl">Соль, г</div><div class="val">${num(n.salt)}</div></div></div>`;
+  document.getElementById('ratRows').innerHTML=rat.items.length?`<table><tr><th>Корм</th><th class="num">кг/день</th><th class="num">к.е.</th><th class="num">Протеин, г</th><th></th></tr>`+
+    rat.items.map((it,i)=>{const r=FREF[it.name]||{ke:0,prot:0};
+      return `<tr><td>${esc(it.name)}</td><td class="num"><input type="number" step="0.1" min="0" value="${it.kg}" oninput="ratKg(${i},this.value)" style="width:110px;text-align:right"></td><td class="num">${num(it.kg*r.ke)}</td><td class="num">${num(it.kg*r.prot)}</td><td><button class="btn sm red" onclick="ratDel(${i})">🗑</button></td></tr>`}).join('')+`</table>`
+    :'<div class="empty">Добавьте корма из списка — посчитаю покрытие нормы</div>';
+  const totK=rat.items.reduce((s,i)=>s+i.kg*(FREF[i.name]||{ke:0}).ke,0);
+  const totP=rat.items.reduce((s,i)=>s+i.kg*(FREF[i.name]||{prot:0}).prot,0);
+  const bar=(v,label)=>`<div style="display:flex;justify-content:space-between;font-size:13px"><span>${label}</span><span class="${v>=95&&v<=115?'':'warn'}">${num(v)}%</span></div><div class="bar"><div style="width:${Math.min(v,100)}%"></div></div>`;
+  document.getElementById('ratTot').innerHTML=`<h3 style="margin-top:14px">Покрытие нормы</h3>${bar(n.ke?totK/n.ke*100:0,'Энергия (к.е.)')}${bar(n.prot?totP/n.prot*100:0,'Протеин')}`;
+  document.getElementById('ratAdvice').innerHTML=rationAdvice(c.status)}
+function rationAdvice(status){
+  if(status==='Дойная')return '<div class="tip"><b>Совет для дойной коровы</b>Литр молока «стоит» около 0,5 к.е. сверх базовой нормы. Комбикорм — главный источник протеина: его дефицит первым бьёт по надою. Соль и вода — в свободном доступе, тёплая вода зимой поддерживает удой.</div>';
+  if(status==='Сухостойная')return '<div class="tip"><b>Совет для сухостойной</b>Не перекармливайте: ожирение перед отёлом — риск родильного пареза и кетоза. Основа рациона — доброкачественное сено. За 2 недели до отёла плавно приучайте к рациону дойной коровы.</div>';
+  if(status==='На откорме')return '<div class="tip"><b>Совет по откорму</b>Ячмень и комбикорм — ядро откорма; переводите на концентраты за 2–3 недели. Нормальный привес — 800–1200 г в сутки (следите в разделе «Привесы»).</div>';
+  return '<div class="tip"><b>Совет по телёнку</b>Основа — молоко/ЗЦМ и стартерный комбикорм: приучайте к твёрдому корму с 10-дневного возраста, сено — с 2 недель. Вода чистая, зимой подогретая.</div>'}
+
+/* ============ НАПРАВЛЕНИЯ ============ */
+const VUNITS=['л','кг','банка','шт'];
+let curVent='all';
+function ventById(id){return db.ventures.find(v=>v.id===id)}
+function ventStats(v){const logs=db.ventLogs.filter(l=>l.ventId===v.id);
+  const prod=logs.filter(l=>l.type==='prod').reduce((s,l)=>s+l.amount,0);
+  const sold=logs.filter(l=>l.type==='sale').reduce((s,l)=>s+l.amount,0);
+  const cost=logs.filter(l=>l.type==='prod').reduce((s,l)=>s+l.amount*(v.cost||0),0);
+  const rev=logs.filter(l=>l.type==='sale').reduce((s,l)=>s+l.amount*(l.price||v.price||0),0);
+  return{prod:prod,sold:sold,left:prod-sold,cost:cost,rev:rev,profit:rev-cost}}
+function buildVentNav(){const el=document.getElementById('navVent');if(!el)return;
+  el.innerHTML=db.ventures.map(v=>`<button class="nv" data-tab="vent:${v.id}">${esc(v.emoji||'📦')} ${esc(v.name)}</button>`).join('');
+  bindNav()}
+function showVentList(){curVent='all';render()}
+function renderVentAll(){const el=document.getElementById('ventBody');
+  if(!db.ventures.length){el.innerHTML='<div class="empty">Направлений пока нет. Создайте любое дело: мёд, яйца, саженцы — что угодно 📦</div>';return}
+  el.innerHTML=db.ventures.map(v=>{const st=ventStats(v);
+    return `<div class="cow-card"><div>
+      <div class="cow-name">${esc(v.emoji||'📦')} ${esc(v.name)} <span class="tag gr">${esc(v.unit)}</span></div>
+      <div class="cow-meta">Произведено: <b>${num(st.prod)}</b> · продано: <b>${num(st.sold)}</b> · остаток: <b>${num(Math.max(st.left,0))}</b> ${esc(v.unit)}</div>
+      <div class="cow-meta">Выручка: <b>${money(st.rev)}</b> · затраты: <b>${money(st.cost)}</b> · прибыль: <b>${money(st.profit)}</b></div>
+      <div class="cow-meta">План: ${num(v.planDay)} ${esc(v.unit)}/день × ${v.planDays} дн. → доход сезона <b>${money(v.planDay*v.planDays*v.price)}</b>, прибыль <b>${money(v.planDay*v.planDays*(v.price-(v.cost||0)))}</b></div></div>
+      <div class="cow-actions">
+        <button class="btn sm" onclick="openVentLog('${v.id}','prod')">＋ Произвести</button>
+        <button class="btn sm blue" onclick="openVentLog('${v.id}','sale')">＋ Продать</button>
+        <button class="btn sm gray" onclick="openVent('${v.id}')">✏️</button>
+        <button class="btn sm red" onclick="delVent('${v.id}')">🗑</button></div></div>`}).join('')}
+function renderVent(id){const v=ventById(id);if(!v){renderVentAll();return}
+  const st=ventStats(v),logs=db.ventLogs.filter(l=>l.ventId===id).sort((a,b)=>b.date.localeCompare(a.date));
+  const expSeas=v.planDay*v.planDays*v.price;
+  document.getElementById('ventBody').innerHTML=`
+    <div class="toolbar"><button class="btn gray" onclick="showVentList()">← Все направления</button>
+      <button class="btn" onclick="openVentLog('${id}','prod')">＋ Произвести</button>
+      <button class="btn blue" onclick="openVentLog('${id}','sale')">＋ Продать</button></div>
+    <div class="kpis">
+      <div class="kpi"><div class="lbl">Произведено</div><div class="val">${num(st.prod)} ${esc(v.unit)}</div></div>
+      <div class="kpi"><div class="lbl">Продано</div><div class="val">${num(st.sold)} ${esc(v.unit)}</div></div>
+      <div class="kpi"><div class="lbl">Остаток</div><div class="val amber">${num(Math.max(st.left,0))} ${esc(v.unit)}</div></div>
+      <div class="kpi"><div class="lbl">Выручка</div><div class="val plus">${money(st.rev)}</div></div>
+      <div class="kpi"><div class="lbl">Затраты</div><div class="val minus">${money(st.cost)}</div></div>
+      <div class="kpi"><div class="lbl">Прибыль</div><div class="val ${st.profit>=0?'plus':'minus'}">${money(st.profit)}</div></div>
+      <div class="kpi"><div class="lbl">Ожидаемый доход сезона</div><div class="val amber">${money(expSeas)}</div><div class="sub">прибыль: ${money(expSeas-v.planDay*v.planDays*(v.cost||0))}</div></div></div>
+    <h3>Журнал</h3><div class="tbl-wrap">${logs.length?`<table><tr><th>Дата</th><th>Операция</th><th class="num">Кол-во</th><th class="num">Сумма</th><th></th></tr>`+
+      logs.map(l=>`<tr><td>${fmtD(l.date)}</td><td>${l.type==='prod'?'⚙️ Производство':'💰 Продажа'}</td><td class="num">${num(l.amount)} ${esc(v.unit)}</td>
+      <td class="num" style="color:${l.type==='prod'?'var(--red)':'var(--acc)'};font-weight:700">${l.type==='prod'?'−'+money(l.amount*(v.cost||0)):'+'+money(l.amount*(l.price||v.price))}</td>
+      <td><button class="btn sm red" onclick="delVentLog('${l.id}')">🗑</button></td></tr>`).join('')+`</table>`:'<div class="empty">Записей пока нет</div>'}</div>
+    <h3 style="margin-top:14px">Производство за 14 дней</h3><canvas class="cv" id="cvVent_${id}"></canvas><div id="vstats"></div>`;
+  const days=[],vals=[];
+  for(let i=13;i>=0;i--){const d=addDays(today(),-i);days.push(d.slice(8,10)+'.'+d.slice(5,7));
+    vals.push(db.ventLogs.filter(l=>l.ventId===id&&l.type==='prod'&&l.date===d).reduce((s,l)=>s+l.amount,0))}
+  requestAnimationFrame(()=>barChart(document.getElementById('cvVent_'+id),days,vals,vals.map(()=>0)));
+  renderVentStats(id)
+}
+function openVent(id){const v=id?ventById(id):{};
+  form(id?'Правка направления':'Новое направление',
+    `<div class="row">${f('Название*','<input id="vName" value="'+esc(v.name||'')+'">')}
+      ${f('Эмодзи','<input id="vEmoji" value="'+esc(v.emoji||'')+'" placeholder="📦">')}</div>`+
+    `<div class="row">${f('Единица','<select id="vUnit">'+VUNITS.map(u=>'<option '+(v.unit===u?'selected':'')+'>'+u+'</option>').join('')+'</select>')}
+      ${f('Цена продажи, ₽ за единицу*','<input id="vPrice" type="number" step="0.01" value="'+(v.price||'')+'">')}</div>`+
+    `<div class="row">${f('Затраты, ₽ за единицу','<input id="vCost" type="number" step="0.01" value="'+(v.cost||'')+'">')}
+      ${f('План: производить в день','<input id="vPlanDay" type="number" step="0.1" value="'+(v.planDay||'')+'">')}</div>`+
+    f('План: дней сезона','<input id="vPlanDays" type="number" value="'+(v.planDays||'')+'">'),
+    ()=>{if(!V('vName')){toast('Введите название');return false}
+      if(N('vPrice')<=0){toast('Укажите цену продажи');return false}
+      const rec={id:id||uid(),name:V('vName'),emoji:V('vEmoji'),unit:V('vUnit')||'шт',price:N('vPrice'),cost:N('vCost'),planDay:N('vPlanDay'),planDays:N('vPlanDays')||30};
+      if(id)db.ventures[db.ventures.findIndex(x=>x.id===id)]=rec;else db.ventures.push(rec);
+      buildVentNav()})}
+function delVent(id){if(!confirm('Удалить направление вместе с журналами? Связанные транзакции будут удалены.'))return;
+  const tids=db.ventLogs.filter(l=>l.ventId===id).map(l=>l.txId).filter(Boolean);
+  db.tx=db.tx.filter(t=>tids.indexOf(t.id)<0);
+  db.ventLogs=db.ventLogs.filter(l=>l.ventId!==id);
+  db.ventures=db.ventures.filter(v=>v.id!==id);
+  buildVentNav();save();render()}
+function openVentLog(id,type){const v=ventById(id);if(!v)return;
+  form(type==='prod'?'Производство: '+v.name:'Продажа: '+v.name,
+    `<div class="row">${f('Дата*','<input id="lDate" type="date" value="'+today()+'">')}
+      ${f('Количество, '+esc(v.unit)+'*','<input id="lAmt" type="number" step="0.1">')}</div>`+
+    (type==='sale'?f('Цена, ₽ за '+esc(v.unit),'<input id="lPrice" type="number" step="0.01" value="'+v.price+'">'):''),
+    ()=>{const amt=N('lAmt');if(amt<=0){toast('Укажите количество');return false}
+      const d=V('lDate')||today();
+      if(type==='sale'){
+        const price=N('lPrice')||v.price,txId=uid()+'t';
+        db.tx.push({id:txId,type:'in',date:d,cat:'Прочее',amount:+(amt*price).toFixed(2),cowId:'',note:'Продажа: '+v.name+' — '+num(amt)+' '+v.unit});
+        db.ventLogs.push({id:uid(),ventId:id,type:'sale',date:d,amount:amt,price:price,txId:txId})}
+      else{
+        const c=amt*(v.cost||0);let txId='';
+        if(c>0){txId=uid()+'t';db.tx.push({id:txId,type:'out',date:d,cat:'Прочее',amount:+c.toFixed(2),cowId:'',note:'Производство: '+v.name+' — '+num(amt)+' '+v.unit})}
+        db.ventLogs.push({id:uid(),ventId:id,type:'prod',date:d,amount:amt,txId:txId})}})}
+function delVentLog(lid){const l=db.ventLogs.find(x=>x.id===lid);if(!l)return;
+  if(l.txId)db.tx=db.tx.filter(t=>t.id!==l.txId);
+  db.ventLogs=db.ventLogs.filter(x=>x.id!==lid);save();render()}
+
+/* ============ ОТЧЁТЫ ============ */
+function repRange(){const v=V('repPeriod'),t=new Date();
+  if(v==='year')return[t.getFullYear()+'-01-01',t.getFullYear()+'-12-31'];
+  if(v==='month')return[thisMk()+'-01',thisMk()+'-31'];
+  if(v==='prev'){const d=new Date();d.setMonth(d.getMonth()-1);const m=d.toISOString().slice(0,7);return[m+'-01',m+'-31']}
+  if(v==='all')return['1970-01-01','9999-12-31'];
+  return[V('repFrom'),V('repTo')]}
+function repPeriodChanged(){const custom=V('repPeriod')==='custom';
+  document.getElementById('repFrom').style.display=custom?'':'none';
+  document.getElementById('repTo').style.display=custom?'':'none';
+  if(custom&&!V('repFrom'))sel('repFrom',today().slice(0,4)+'-01-01');
+  if(custom&&!V('repTo'))sel('repTo',today());
+  renderReports()}
+function renderReports(){
+  const from=repRange()[0],to=repRange()[1],P=t=>t.date>=from&&t.date<=to;
+  const inc=db.tx.filter(t=>t.type==='in'&&P(t)).reduce((s,t)=>s+t.amount,0);
+  const out=db.tx.filter(t=>t.type==='out'&&P(t)).reduce((s,t)=>s+t.amount,0);
+  const lit=db.milk.filter(t=>P(t)).reduce((s,t)=>s+t.liters,0);
+  document.getElementById('repBody').innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="lbl">Заработано</div><div class="val plus">${money(inc)}</div></div>
+    <div class="kpi"><div class="lbl">Потрачено</div><div class="val minus">${money(out)}</div></div>
+    <div class="kpi"><div class="lbl">Прибыль</div><div class="val ${inc-out>=0?'plus':'minus'}">${money(inc-out)}</div></div>
+    <div class="kpi"><div class="lbl">Надоено</div><div class="val">${num(lit)} л</div></div></div>
+    <h3>Доходы по категориям</h3><canvas class="cv" id="cvRepIn"></canvas>
+    <h3 style="margin-top:12px">Расходы по категориям</h3><canvas class="cv" id="cvRepOut"></canvas>
+    <h3 style="margin-top:12px">Итоги по коровам <button class="ibtn" onclick="showInfo('repCows')">i</button></h3><div class="tbl-wrap" id="repCows"></div>
+    <h3 style="margin-top:12px">Молоко: себестоимость и маржа (оценка) <button class="ibtn" onclick="showInfo('costL')">i</button></h3><div id="repMilk"></div>
+    <h3 style="margin-top:12px">Накопительная касса <button class="ibtn" onclick="showInfo('cash')">i</button></h3><canvas class="cv" id="cvRepCash"></canvas>`;
+  const grp={in:{},out:{}};
+  db.tx.filter(P).forEach(t=>{grp[t.type][t.cat]=(grp[t.type][t.cat]||0)+t.amount});
+  const arr=g=>Object.keys(g).map(k=>({name:k,v:g[k]})).sort((a,b)=>b.v-a.v);
+  requestAnimationFrame(()=>{donut(document.getElementById('cvRepIn'),arr(grp.in));donut(document.getElementById('cvRepOut'),arr(grp.out))});
+  document.getElementById('repCows').innerHTML=db.cows.length?`<table><tr><th>Корова</th><th class="num">Надоено, л</th><th class="num">Выручка (ср. цена ${money2(avgSalePrice())})</th><th class="num">Расходы</th><th class="num">Корма, ₽</th><th class="num">Итог</th></tr>`+
+    db.cows.map(c=>{const ml=db.milk.filter(t=>t.cowId===c.id&&P(t)).reduce((s,t)=>s+t.liters,0);
+      const earn=ml*avgSalePrice();
+      const exp=db.tx.filter(t=>t.type==='out'&&t.cowId===c.id&&P(t)).reduce((s,t)=>s+t.amount,0);
+      const feed=db.feedUse.filter(t=>t.cowId===c.id&&P(t)).reduce((s,u)=>{const buys=db.feedBuy.filter(b=>b.feedId===u.feedId);const cb=buys.reduce((a,b)=>a+b.cost,0),ca=buys.reduce((a,b)=>a+b.amount,0);return s+(ca?u.amount*cb/ca:0)},0);
+      const tot=earn-exp-feed;
+      return `<tr><td>${esc(c.name)}</td><td class="num">${num(ml)}</td><td class="num" style="color:var(--acc)">${money(earn)}</td><td class="num">${money(exp)}</td><td class="num">${money(feed)}</td><td class="num" style="color:${tot>=0?'var(--acc)':'var(--red)'};font-weight:700">${money(tot)}</td></tr>`}).join('')+`</table>`
+    :'<div class="empty">Коров нет</div>';
+  const costL=lit?out/lit:0,avgP=avgSalePrice();
+  document.getElementById('repMilk').innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="lbl">Себестоимость литра</div><div class="val">${money2(costL)}</div><div class="sub">расходы периода / надоенные литры</div></div>
+    <div class="kpi"><div class="lbl">Средняя цена продаж</div><div class="val">${money2(avgP)}</div></div>
+    <div class="kpi"><div class="lbl">Маржа</div><div class="val ${avgP>costL?'plus':'minus'}">${avgP>0?num((avgP-costL)/avgP*100)+'%':'—'}</div></div></div>`;
+  const txs=db.tx.filter(P).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  let cum=0;const cash=txs.map(t=>{cum+=t.type==='in'?t.amount:-t.amount;return +cum.toFixed(2)});
+  requestAnimationFrame(()=>lineChart(document.getElementById('cvRepCash'),[{name:'Касса',color:'#22c55e',data:cash}],txs.map(t=>t.date.slice(8,10)+'.'+t.date.slice(5,7))))}
+
+/* ============ КАЛЬКУЛЯТОР ============ */
+function renderCalc(){calcMilk();calcBerry();calcForecast();ucFill();ucCalc()}
+function calcMilk(){
+  const cows=N('cCows'),liters=N('cLiters'),price=N('cPrice'),cost=N('cCost'),fixed=N('cFixed');
+  const incD=cows*liters*price,profD=cows*liters*(price-cost)-fixed/30;
+  const profM=profD*30,profY=cows*liters*(price-cost)*365-fixed*12;
+  const marg=price>0?(price-cost)/price*100:0;
+  const be=(price-cost)>0&&cows>0?fixed/((price-cost)*cows):null;
+  document.getElementById('calcMilkOut').innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="lbl">Доход в день</div><div class="val plus">${money(incD)}</div></div>
+    <div class="kpi"><div class="lbl">Прибыль в день</div><div class="val ${profD>=0?'plus':'minus'}">${money(profD)}</div></div>
+    <div class="kpi"><div class="lbl">Прибыль в месяц</div><div class="val ${profM>=0?'plus':'minus'}">${money(profM)}</div></div>
+    <div class="kpi"><div class="lbl">Прибыль за ГОД</div><div class="val ${profY>=0?'plus':'minus'}">${money(profY)}</div></div>
+    <div class="kpi"><div class="lbl">Маржа</div><div class="val">${num(marg)}%</div></div>
+    <div class="kpi"><div class="lbl">Точка безубыточности</div><div class="val">${be!==null?num(be)+' л/день':'—'}</div><div class="sub">с коровы, чтобы покрыть постоянные расходы</div></div></div>`}
+function calcBerry(){
+  const ld=N('bLD'),days=N('bDays'),price=N('bPrice'),pick=N('bPick'),other=N('bOther');
+  const rev=ld*days*price,cost=ld*days*pick+other,profit=rev-cost;
+  const marg=rev>0?profit/rev*100:0;
+  document.getElementById('calcBerryOut').innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="lbl">Выручка сезона</div><div class="val plus">${money(rev)}</div></div>
+    <div class="kpi"><div class="lbl">Затраты сезона</div><div class="val minus">${money(cost)}</div></div>
+    <div class="kpi"><div class="lbl">Прибыль</div><div class="val ${profit>=0?'plus':'minus'}">${money(profit)}</div></div>
+    <div class="kpi"><div class="lbl">Маржа</div><div class="val">${num(marg)}%</div></div>
+    <div class="kpi"><div class="lbl">Прибыль в день</div><div class="val ${profit>=0?'plus':'minus'}">${money(profit/(days||1))}</div></div></div>`}
+function calcForecast(){
+  const y=today().slice(0,4);
+  const incY=db.tx.filter(t=>t.date.slice(0,4)===y&&t.type==='in').reduce((s,t)=>s+t.amount,0);
+  const outY=db.tx.filter(t=>t.date.slice(0,4)===y&&t.type==='out').reduce((s,t)=>s+t.amount,0);
+  const yf=yearForecast();
+  let rows='';
+  if(yf){const sc=[['По среднему месяцу',yf.avgInc*12,yf.avgOut*12],
+    ['По тренду последних 3 месяцев',yf.l3Inc*12,yf.l3Out*12],
+    ['Консервативно (худший месяц)',yf.worstInc*12,yf.avgOut*12]];
+    rows=sc.map(r=>`<tr><td>${r[0]}</td><td class="num" style="color:var(--acc)">${money(r[1])}</td><td class="num">${money(r[2])}</td><td class="num" style="color:${r[1]-r[2]>=0?'var(--acc)':'var(--red)'};font-weight:700">${money(r[1]-r[2])}</td></tr>`).join('')}
+  document.getElementById('calcForecast').innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="lbl">Заработано с начала года</div><div class="val plus">${money(incY)}</div></div>
+    <div class="kpi"><div class="lbl">Потрачено с начала года</div><div class="val minus">${money(outY)}</div></div>
+    <div class="kpi"><div class="lbl">Прибыль с начала года</div><div class="val ${incY-outY>=0?'plus':'minus'}">${money(incY-outY)}</div></div></div>`+
+    (rows?`<table><tr><th>Сценарий</th><th class="num">Доход за год</th><th class="num">Расход за год</th><th class="num">Прибыль</th></tr>${rows}</table>`
+    :'<div class="empty">Нет данных за год — добавьте транзакции</div>')}
+
+
+buildVentNav();bindNav();
+/* ===== EXT: справки (i), свой корм, статистика направлений, универсальный калькулятор ===== */
+const INFO={
+ration:'<b>к.е. — кормовая единица: что это такое</b>К.е. — условная «энергетическая валюта» корма. За 1 к.е. принята питательность 1 кг овса среднего качества — это примерно 2500 ккал обменной энергии. Логика простая: сколько «овсов» по питательности заменяет ваш корм.<br><br><b>Нормы в этом приложении:</b><br>• Дойная корова: 1,5 к.е. на поддержание жизни + 0,5 к.е. на каждый литр молока. Пример: корова даёт 15 л в день → 1,5 + 7,5 = 9 к.е. в сутки.<br>• Сухостойная: 1 к.е. + 0,35 к.е. на каждые 100 кг веса. Корова 500 кг → 2,75 к.е.<br>• На откорме: 1 к.е. + 2,2 к.е. на каждые 100 кг веса. Бычок 300 кг → 7,6 к.е.<br>• Телёнок: 1,2 к.е. + 0,4 к.е. на 100 кг веса.<br><br><b>Остальные показатели:</b> протеин — примерно 100–110 г на каждую к.е. рациона; энергия в ккал = к.е. × 2500; вода: дойной около 40 л плюс 5 л на каждый литр молока, остальным около 35 л; соль: дойной 60 г плюс 5 г на литр молока, остальным 40 г. Всё это ориентиры — точные нормы зависят от веса, породы и качества кормов.',
+ref:'<b>Как читать справочник кормов</b>к.е./кг — сколько кормовых единиц в одном килограмме: чем выше цифра, тем питательнее корм и тем меньше его нужно по весу. Протеин — граммы белка в килограмме корма. ккал/кг — энергия, считается как к.е. × 2500.<br><br><b>Колонка «кг на 1 л молока»</b> — сколько килограммов этого корма нужно сверх базового рациона, чтобы корова дала один дополнительный литр молока. Формула: на 1 литр молока нужно 0,5 к.е., значит кг = 0,5 ÷ к.е. корма. Пример: комбикорм 1,0 к.е./кг → 0,5 кг на литр; свёкла 0,12 к.е./кг → около 4,2 кг. Поэтому концентраты дают понемногу, а сочные корма — вёдрами. Цифры средние по справочникам: реальная питательность зависит от качества сена и урожая.',
+milkCalc:'<b>Как читать калькулятор молока</b>Маржа — доля цены, которая остаётся после себестоимости: (цена − себестоимость) ÷ цена × 100%. Продали за 60 ₽ при себестоимости 35 ₽ → маржа 42%.<br><br><b>Точка безубыточности</b> — сколько литров в день с одной коровы нужно, чтобы постоянные расходы (электричество, транспорт, налоги) покрылись маржой молока: постоянные расходы ÷ (прибыль с литра × число коров). Если постоянные расходы нулевые — показывается прочерк.<br><br>Прибыль за год = дневная маржа × 365 дней − постоянные расходы × 12 месяцев.',
+berryCalc:'<b>Как читать калькулятор ягод</b>Выручка = сбор в день × дней сезона × цена. Затраты = сбор × дни × оплата сборщика + прочие расходы (тара, транспорт, реклама). Маржа = прибыль ÷ выручка × 100%. Прибыль в день — средний заработок каждого дня сезона. Если цифра отрицательная — сезон убыточен: поднимайте цену, снижайте оплату сбора или убирайте лишние расходы.',
+uc:'<b>Универсальный калькулятор: считаем что угодно</b>Подходит для любого продукта: мёд, яйца, сыр, мясо, саженцы, зерно — что угодно. Пресет подставляет типовые цену и себестоимость — потом правьте под свои условия.<br><br><b>Что считается:</b> выручка и прибыль за день, месяц и год; маржа — доля цены, которая остаётся после себестоимости; точка безубыточности — сколько единиц в день нужно продавать, чтобы постоянные расходы покрылись маржой.<br><br><b>Рабочих дней в году</b> — для сезонных дел: у мёда это может быть 120 дней, у яиц — все 365.',
+forecast:'<b>Как работает прогноз</b>Три сценария по вашим фактическим записям года:<br>• По среднему месяцу — средние доход и расход за все месяцы умножаются на 12.<br>• По тренду последних 3 месяцев — если дела пошли лучше или хуже, прогноз опирается на свежие цифры.<br>• Консервативно — доход берётся по худшему месяцу года, расход по среднему: скромная, но честная оценка. Чем больше записей накоплено, тем точнее прогноз.',
+dashForecast:'<b>Прогноз на дашборде</b>Приложение берёт средний надой за последние 14 дней и среднюю цену ваших продаж молока, умножает на 30 дней — это ожидаемый доход месяца от молока. Если данных мало или надои скачут, прогноз будет примерным: ровные ежедневные записи делают его точнее.',
+repCows:'<b>Как считаются итоги по коровам</b>Надоено — литры из раздела «Надои» за выбранный период. Выручка — надоеное молоко × средняя цена продаж молока за период. Расходы — транзакции, привязанные к этой корове. Корма — сколько корова «съела» по журналу раздачи в рублях (по средней цене закупки каждого корма). Итог = выручка − расходы − корма. Это управленческая оценка: если корова ест много и даёт мало — цифра это покажет.',
+costL:'<b>Себестоимость литра — как понимать</b>Грубая оценка: все расходы периода делятся на все надоенные литры за тот же период. По-честному к себестоимости молока относят корма, ветеринарию, электричество и амортизацию, а расходы на ягоды и другие направления в молоко не вписывают — поэтому цифра здесь ориентир для сравнения периодов между собой. Маржа показывает, насколько средняя цена продажи выше себестоимости.',
+cash:'<b>Накопительная касса</b>График показывает, сколько денег было «на руках» после каждой операции: продажа добавляет, расход отнимает. Полезно смотреть, в какие месяцы касса проседает — обычно это период закупки кормов. Линия ниже нуля означает работу в долг.',
+vent:'<b>Направления: как это работает</b>Любое дело — мёд, яйца, саженцы, овощи — заводится здесь: название, эмодзи, единица измерения, цена и себестоимость единицы, план на день и дней сезона. Кнопка направления появится в левой панели.<br><br>«Произвести» — запись о производстве; если указаны затраты на единицу, автоматически создаётся расход в общих финансах. «Продать» — создаёт доход в общих финансах и запись в журнале, поэтому касса и отчёты всегда сходятся.<br><br><b>Статистика</b> внизу карточки: производство и продажи за месяц и прошлый месяц, выручка, среднее в день за 30 дней, лучший день и выполнение плана в процентах, таблица за три последних месяца. Удаление направления убирает и его журналы, и связанные транзакции.'
+};
+function showInfo(k){form('Справка','<div class="tip" style="white-space:normal;line-height:1.55">'+(INFO[k]||'Описание не найдено')+'</div>',function(){})}
+function openFeedCustom(){form('Свой корм','<div class="row">'+f('Название*','<input id="cfName">')+f('К.е. на кг*','<input id="cfKe" type="number" step="0.01" min="0">')+'</div><div class="row">'+f('Протеин, г на кг','<input id="cfProt" type="number" step="1" min="0">')+'</div><p class="muted">К.е. — питательность 1 кг овса (примерно 2500 ккал). Подставьте значение из справочника кормов — и колонка «кг на 1 л молока» посчитается сама.</p>',function(){const n=V('cfName').trim();if(!n){toast('Введите название');return false}const ke=N('cfKe');if(ke<=0){toast('Укажите к.е. больше нуля');return false}db.customFeeds=db.customFeeds||{};db.customFeeds[n]={ke:ke,prot:N('cfProt')||0};FREF[n]=db.customFeeds[n];save();renderRation()})}
+function renderVentStats(id){
+  const v=ventById(id);if(!v)return;
+  const el=document.getElementById('vstats');if(!el)return;
+  const logs=db.ventLogs.filter(l=>l.ventId===id);
+  const mk=today().slice(0,7);
+  const d0=new Date();d0.setMonth(d0.getMonth()-1);const pm=d0.toISOString().slice(0,7);
+  const pr=mm=>logs.filter(l=>l.type==='prod'&&l.date.slice(0,7)===mm).reduce((s,l)=>s+l.amount,0);
+  const sl=mm=>logs.filter(l=>l.type==='sale'&&l.date.slice(0,7)===mm).reduce((s,l)=>s+l.amount,0);
+  const rv=mm=>logs.filter(l=>l.type==='sale'&&l.date.slice(0,7)===mm).reduce((s,l)=>s+l.amount*(l.price||v.price||0),0);
+  const d30={};
+  logs.filter(l=>l.type==='prod'&&l.date>=addDays(today(),-30)).forEach(l=>{d30[l.date]=(d30[l.date]||0)+l.amount});
+  const p30=Object.keys(d30).reduce((s,k)=>s+d30[k],0);
+  const best=Object.keys(d30).sort((a,b)=>d30[b]-d30[a])[0]||'';
+  const plan=(v.planDay||0)*30;
+  const pl=plan>0?Math.min(p30/plan*100,999):0;
+  let rows='';
+  for(let i=0;i<3;i++){const dd=new Date();dd.setMonth(dd.getMonth()-i);const mm=dd.toISOString().slice(0,7);
+    rows+='<tr><td>'+mm+'</td><td class="num">'+num(pr(mm))+'</td><td class="num">'+num(sl(mm))+'</td><td class="num" style="color:var(--acc)">'+money(rv(mm))+'</td></tr>'}
+  el.innerHTML=`<h3 style="margin-top:14px">Статистика направления <button class="ibtn" onclick="showInfo('vent')">i</button></h3>
+  <div class="kpis">
+    <div class="kpi"><div class="lbl">Производство, этот месяц</div><div class="val">${num(pr(mk))} ${esc(v.unit)}</div></div>
+    <div class="kpi"><div class="lbl">Продажи, этот месяц</div><div class="val">${num(sl(mk))} ${esc(v.unit)}</div></div>
+    <div class="kpi"><div class="lbl">Выручка за месяц</div><div class="val plus">${money(rv(mk))}</div></div>
+    <div class="kpi"><div class="lbl">В прошлом месяце</div><div class="val">${num(pr(pm))} ${esc(v.unit)}</div></div>
+    <div class="kpi"><div class="lbl">Среднее в день (30 дн.)</div><div class="val">${num(p30/30)}</div></div>
+    <div class="kpi"><div class="lbl">Лучший день за 30 дн.</div><div class="val amber">${best?num(d30[best])+' — '+fmtD(best):'—'}</div></div>
+    <div class="kpi"><div class="lbl">План выполнен на</div><div class="val ${pl>=100?'plus':'amber'}">${num(pl)}%</div></div></div>
+  <div class="tbl-wrap"><table><tr><th>Месяц</th><th class="num">Произведено</th><th class="num">Продано</th><th class="num">Выручка</th></tr>${rows}</table></div>`;
+}
+const UC_PRESET=[['Молоко','л',60,35],['Яйца','шт',12,5],['Мёд','кг',600,200],['Мясо','кг',450,250],['Сыр','кг',700,350],['Творог','кг',450,250],['Овощи','кг',60,25],['Картофель','кг',30,12],['Ягода','л',150,50],['Саженцы','шт',100,30],['Шерсть','кг',300,120],['Воск','кг',800,300],['Зерно','кг',25,10],['Прочее','шт',100,50]];
+function ucFill(){const s=document.getElementById('uPreset');if(!s)return;s.innerHTML='<option value="">— выберите пресет —</option>'+UC_PRESET.map(p=>'<option>'+p[0]+'</option>').join('')}
+function ucSet(k){const p=UC_PRESET.find(x=>x[0]===k);if(!p)return;document.getElementById('uName').value=p[0];document.getElementById('uUnit').value=p[1];document.getElementById('uPrice').value=p[2];document.getElementById('uCost').value=p[3];ucCalc()}
+function ucCalc(){
+  const el=document.getElementById('ucOut');if(!el)return;
+  const name=V('uName')||'Продукт',unit=V('uUnit')||'шт';
+  const perDay=N('uPerDay'),price=N('uPrice'),cost=N('uCost'),fixed=N('uFixed'),dYear=N('uDays')||365;
+  const marg=price>0?(price-cost)/price*100:0;
+  const revD=perDay*price;
+  const profD=perDay*(price-cost)-fixed/30;
+  const profM=profD*30;
+  const profY=perDay*dYear*(price-cost)-fixed*12;
+  const be=(price-cost)>0&&perDay>0?fixed/(price-cost):null;
+  el.innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="lbl">Выручка в день</div><div class="val">${money(revD)}</div><div class="sub">${esc(name)}: ${num(perDay)} ${esc(unit)} × ${money(price)}</div></div>
+    <div class="kpi"><div class="lbl">Прибыль в день</div><div class="val ${profD>=0?'plus':'minus'}">${money(profD)}</div></div>
+    <div class="kpi"><div class="lbl">Прибыль в месяц</div><div class="val ${profM>=0?'plus':'minus'}">${money(profM)}</div></div>
+    <div class="kpi"><div class="lbl">Прибыль в год</div><div class="val ${profY>=0?'plus':'minus'}">${money(profY)}</div></div>
+    <div class="kpi"><div class="lbl">Маржа</div><div class="val">${num(marg)}%</div></div>
+    <div class="kpi"><div class="lbl">Безубыточность</div><div class="val">${be!==null?num(be)+' '+esc(unit)+'/день':'—'}</div><div class="sub">сколько продавать, чтобы покрыть постоянные расходы</div></div></div>`+
+    (profD<0?'<div class="tip"><b>Убыточно</b>При текущих цифрах направление теряет деньги: поднимите цену, снизьте себестоимость или постоянные расходы.</div>':'');
+}
+db.customFeeds=db.customFeeds||{};
+for(const k in db.customFeeds)FREF[k]=db.customFeeds[k];
+buildVentNav();render();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
